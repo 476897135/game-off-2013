@@ -26,6 +26,9 @@ public class PlatformerController : RigidBodyController {
 
     public bool jumpDropAllow = true; //if true, player can jump when they are going down
 
+    public float airDampForceX; //force to try to reduce the horizontal speed while mid-air
+    public float airDampMinSpeedX; //minimum criteria of horizontal speed when dampening
+
     public bool wallStick = true;
     public bool wallStickPush = false; //if true, player must press the direction towards the wall to stick
     public bool wallStickDownOnly = false; //if true, only stick to wall if we are going downwards
@@ -275,7 +278,7 @@ public class PlatformerController : RigidBodyController {
 
                         PrepJumpVel();
 
-                        rigidbody.AddForce(dirHolder.up * jumpImpulse, ForceMode.Impulse);    
+                        rigidbody.AddForce(dirHolder.up * jumpImpulse, ForceMode.Impulse);
 
                         mJumpCounter++;
                         mJumpingWall = false;
@@ -407,7 +410,7 @@ public class PlatformerController : RigidBodyController {
                     if(plankCollFlag != CollisionFlags.Below) {
                         RemoveColl(i);
                         i--;
-                    }                    
+                    }
                 }
             }
 
@@ -557,7 +560,7 @@ public class PlatformerController : RigidBodyController {
             mLastGround = isGrounded;
         }
     }
-    
+
     protected override void OnDestroy() {
         inputEnabled = false;
 
@@ -629,8 +632,9 @@ public class PlatformerController : RigidBodyController {
             }
             else if(!(isSlopSlide || mJumpingWall)) {
                 //moveForward = moveY;
-                if(!mMoveSideLock)
+                if(!mMoveSideLock) {
                     moveSide = moveX;
+                }
 
                 if(isGrounded) {
                     //set current move Y and down time while on ground
@@ -704,6 +708,15 @@ public class PlatformerController : RigidBodyController {
             //push towards the wall
             body.AddForce(-mWallStickCollInfo.normal * wallStickForce);
         }
+        else if(mCollCount == 0) {
+            //check if no collision, then try to dampen horizontal speed
+            if(airDampForceX != 0.0f && moveSide == 0.0f) {
+                if(localVelocity.x < -airDampMinSpeedX || localVelocity.x > airDampMinSpeedX) {
+                    Vector3 dir = localVelocity.x < 0.0f ? Vector3.right : Vector3.left;
+                    body.AddForce(dirRot * dir * airDampForceX);
+                }
+            }
+        }
 
         //see if we are jumping wall and falling, then cancel jumpwall
         if(mJumpingWall && Time.fixedTime - mJumpLastTime >= jumpWallLockDelay)
@@ -716,7 +729,7 @@ public class PlatformerController : RigidBodyController {
             rigidbody.drag = ladderDrag;
 
         //if(CheckPenetrate(0.1f, plankLayer))
-            //Debug.Log("planking");
+        //Debug.Log("planking");
     }
 
     /*IEnumerator DoWallStick() {
