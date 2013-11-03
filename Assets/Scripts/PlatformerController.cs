@@ -13,7 +13,7 @@ public class PlatformerController : RigidBodyController {
     public Vector3 eyeOfs;
 
     public int jumpCounter = 1;
-    public float jumpAirImpulse = 3f;
+    public float jumpImpulse = 2f;
     public float jumpWallImpulse = 8f;
     public float jumpWallUpImpulse = 4f;
     public float jumpWaterForce = 5f;
@@ -42,6 +42,10 @@ public class PlatformerController : RigidBodyController {
     public float ladderDrag = 20.0f;
     public float ladderJumpForce = 10.0f;
 
+    public LayerMask plankLayer;
+    public float plankDropDelay; //hold down long enough to drop from plank
+    public float plankCheckDelay; //delay to check if we can revert plank collision
+
     public int player = 0;
     public int moveInputX = InputManager.ActionInvalid;
     public int moveInputY = InputManager.ActionInvalid;
@@ -51,6 +55,8 @@ public class PlatformerController : RigidBodyController {
 
     public event Callback landCallback;
     public event Callback jumpCallback;
+
+    private const string mInvokePlankEndIgnore = "OnPlankEndIgnore";
 
     private bool mInputEnabled = false;
 
@@ -81,6 +87,13 @@ public class PlatformerController : RigidBodyController {
 
     private bool mMoveSideLock;
 
+    private bool mPlankIsIgnore;
+    private bool mPlankCheckActive;
+    private int[] mPlankLayerIndices;
+
+    private float mMoveYGround;
+    private float mMoveYGroundDownLastTime; //last time the down key was pressed
+
     public bool inputEnabled {
         get { return mInputEnabled; }
         set {
@@ -98,6 +111,8 @@ public class PlatformerController : RigidBodyController {
                             input.RemoveButtonCall(player, jumpInput, OnInputJump);
 
                         mJumpInputDown = false;
+
+                        mMoveYGround = 0.0f;
                     }
                 }
             }
@@ -169,6 +184,8 @@ public class PlatformerController : RigidBodyController {
 
         mIsOnPlatform = false;
         mIsOnPlatformLayerMask = 0;
+
+        SetPlankingIgnore(false);
     }
 
     /// <summary>
@@ -258,8 +275,7 @@ public class PlatformerController : RigidBodyController {
 
                         PrepJumpVel();
 
-                        if(!isGrounded)
-                            rigidbody.AddForce(dirHolder.up * jumpAirImpulse, ForceMode.Impulse);
+                        rigidbody.AddForce(dirHolder.up * jumpImpulse, ForceMode.Impulse);    
 
                         mJumpCounter++;
                         mJumpingWall = false;
@@ -377,6 +393,41 @@ public class PlatformerController : RigidBodyController {
     }
 
     protected override void RefreshCollInfo() {
+        //plank check, see if we need to ignore it
+        if(plankLayer != 0 && !mPlankIsIgnore) {
+            //check if there's a coll that is a plank
+            bool plankFound = false;
+            CollisionFlags plankCollFlag = CollisionFlags.None;
+
+            for(int i = 0; i < mCollCount; i++) {
+                CollideInfo inf = mColls[i];
+                if(((1 << inf.collider.gameObject.layer) & plankLayer) != 0) {
+                    plankFound = true;
+                    plankCollFlag = inf.flag;
+                    if(plankCollFlag != CollisionFlags.Below) {
+                        RemoveColl(i);
+                        i--;
+                    }                    
+                }
+            }
+
+            if(plankFound) {
+                if(plankCollFlag == CollisionFlags.Below) {
+                    //check if we are ready to drop
+                    if(mMoveYGround < 0.0f && Time.fixedTime - mMoveYGroundDownLastTime >= plankDropDelay) {
+                        SetPlankingIgnore(true);
+                    }
+                }
+                else {
+                    SetLocalVelocityToBody(); //revert rigidbody's velocity :P
+                    SetPlankingIgnore(true);
+                }
+            }
+            else if(isGrounded && mMoveYGround < 0.0f) {
+                mMoveYGround = 0.0f;
+            }
+        }
+
         base.RefreshCollInfo();
 
         //bool isGroundColl = (mCollFlags & CollisionFlags.Below) != 0;
@@ -506,7 +557,7 @@ public class PlatformerController : RigidBodyController {
             mLastGround = isGrounded;
         }
     }
-
+    
     protected override void OnDestroy() {
         inputEnabled = false;
 
@@ -523,6 +574,9 @@ public class PlatformerController : RigidBodyController {
 
     protected override void Awake() {
         base.Awake();
+
+        if(plankLayer != 0)
+            mPlankLayerIndices = M8.PhysicsUtil.GetLayerIndices(plankLayer);
     }
 
     // Use this for initialization
@@ -577,6 +631,18 @@ public class PlatformerController : RigidBodyController {
                 //moveForward = moveY;
                 if(!mMoveSideLock)
                     moveSide = moveX;
+
+                if(isGrounded) {
+                    //set current move Y and down time while on ground
+                    float newY = moveY < -0.1f ? -1.0f : moveY > 0.1f ? 1.0f : 0.0f;
+                    if(mMoveYGround != newY) {
+                        mMoveYGround = newY;
+                        if(mMoveYGround < 0.0f)
+                            mMoveYGroundDownLastTime = Time.fixedTime;
+                    }
+                }
+                else
+                    mMoveYGround = 0.0f;
             }
 
             //jump
@@ -609,6 +675,8 @@ public class PlatformerController : RigidBodyController {
                 moveSide = 0.0f;
 
             mJump = false;
+
+            mMoveYGround = 0.0f;
         }
 
         base.FixedUpdate();
@@ -646,6 +714,9 @@ public class PlatformerController : RigidBodyController {
 
         if(isOnLadder)
             rigidbody.drag = ladderDrag;
+
+        //if(CheckPenetrate(0.1f, plankLayer))
+            //Debug.Log("planking");
     }
 
     /*IEnumerator DoWallStick() {
@@ -664,7 +735,7 @@ public class PlatformerController : RigidBodyController {
     }*/
 
     void PrepJumpVel() {
-        //ComputeLocalVelocity();
+        ComputeLocalVelocity();
 
         Vector3 newVel = localVelocity;
 
@@ -706,5 +777,41 @@ public class PlatformerController : RigidBodyController {
 
     bool CheckWallStickIn(float criteria) {
         return criteria != 0 && ((criteria < 0.0f && mWallStickSide == M8.MathUtil.Side.Left) || (criteria > 0.0f && mWallStickSide == M8.MathUtil.Side.Right));
+    }
+
+    //heh...
+    void SetPlankingIgnore(bool ignore) {
+        if(mPlankIsIgnore != ignore) {
+            mPlankIsIgnore = ignore;
+
+            if(mPlankLayerIndices != null) {
+                for(int i = 0, max = mPlankLayerIndices.Length; i < max; i++)
+                    Physics.IgnoreLayerCollision(gameObject.layer, mPlankLayerIndices[i], mPlankIsIgnore);
+            }
+            else
+                mPlankIsIgnore = false; //force false since no plank layer
+
+            if(mPlankIsIgnore) {
+                if(!mPlankCheckActive)
+                    StartCoroutine(DoPlankCheck());
+            }
+            else
+                mPlankCheckActive = false;
+        }
+    }
+
+    IEnumerator DoPlankCheck() {
+        mPlankCheckActive = true;
+        WaitForSeconds wait = new WaitForSeconds(plankCheckDelay);
+
+        while(mPlankCheckActive) {
+            yield return wait;
+
+            if(!CheckPenetrate(0.01f, plankLayer)) {
+                mPlankCheckActive = false;
+            }
+        }
+
+        SetPlankingIgnore(false);
     }
 }
