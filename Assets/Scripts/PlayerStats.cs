@@ -7,12 +7,14 @@ using System.Collections;
 public class PlayerStats : Stats {
     public const string hpModFlagsKey = "playerHPMod";
     public const int hpModCount = 8;
-    public const int hpMod = 2;
+    public const float hpMod = 2;
 
     public const string lifeCountKey = "playerLife";
+
+    public const string weaponFlagsKey = "playerWeapons";
         
     public event ChangeCallback changeMaxHPCallback;
-
+        
     public int curLife {
         get {
             return SceneState.instance.GetGlobalValue(lifeCountKey);
@@ -21,6 +23,10 @@ public class PlayerStats : Stats {
         set {
             SceneState.instance.SetGlobalValue(lifeCountKey, Mathf.Clamp(value, 0, 99), false);
         }
+    }
+
+    public bool IsWeaponAvailable(int index) {
+        return SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
     }
         
     protected override void OnDestroy() {
@@ -52,10 +58,10 @@ public class PlayerStats : Stats {
                 numMod++;
         }
 
-        int newMaxHP = numMod * hpMod;
+        float newMaxHP = numMod * hpMod;
 
         if(maxHP != newMaxHP) {
-            int prevMaxHP = maxHP;
+            float prevMaxHP = maxHP;
 
             maxHP = newMaxHP;
 

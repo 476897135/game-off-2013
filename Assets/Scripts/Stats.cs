@@ -4,19 +4,19 @@ using System.Collections;
 public class Stats : MonoBehaviour {
     public delegate void ChangeCallback(Stats stat, float prevVal);
 
-    public int maxHP;
+    public float maxHP;
 
     public event ChangeCallback changeHPCallback;
 
-    private int mCurHP;
+    private float mCurHP;
 
-    public int curHP {
+    public float curHP {
         get { return mCurHP; }
 
         set {
-            int v = Mathf.Clamp(value, 0, maxHP);
+            float v = Mathf.Clamp(value, 0, maxHP);
             if(mCurHP != v) {
-                int prev = mCurHP;
+                float prev = mCurHP;
                 mCurHP = v;
 
                 if(changeHPCallback != null)

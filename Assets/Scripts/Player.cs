@@ -9,6 +9,8 @@ public class Player : EntityBase {
 
     public LayerMask solidMask; //use for standing up, etc.
 
+    public Weapon[] weapons;
+
     private PlayerStats mStats;
 
     private PlatformerController mCtrl;
@@ -24,6 +26,33 @@ public class Player : EntityBase {
     private bool mInputEnabled;
     private bool mSliding;
     private float mSlidingLastTime;
+
+    private int mCurWeaponInd = -1;
+
+    public int currentWeaponIndex {
+        get { return mCurWeaponInd; }
+        set {
+            if(mCurWeaponInd != value && mStats.IsWeaponAvailable(value) && weapons[value] != null) {
+                int prevWeaponInd = mCurWeaponInd;
+                mCurWeaponInd = value;
+
+                //disable previous
+                if(prevWeaponInd >= 0 && prevWeaponInd < weapons.Length && weapons[prevWeaponInd])
+                    weapons[prevWeaponInd].gameObject.SetActive(false);
+
+                //enable new one
+                weapons[mCurWeaponInd].gameObject.SetActive(true);
+            }
+        }
+    }
+
+    public Weapon currentWeapon {
+        get {
+            if(mCurWeaponInd >= 0)
+                return weapons[mCurWeaponInd];
+            return null;
+        }
+    }
 
     public bool inputEnabled {
         get { return mInputEnabled; }
@@ -96,6 +125,8 @@ public class Player : EntityBase {
 
     public override void SpawnFinish() {
         //start ai, player control, etc
+        currentWeaponIndex = 0;
+
         state = (int)EntityState.Normal;
     }
 
@@ -121,6 +152,13 @@ public class Player : EntityBase {
         mCapsuleColl = collider as CapsuleCollider;
         mDefaultColliderCenter = mCapsuleColl.center;
         mDefaultColliderHeight = mCapsuleColl.height;
+
+        mStats = GetComponent<PlayerStats>();
+
+        foreach(Weapon weapon in weapons) {
+            if(weapon)
+                weapon.gameObject.SetActive(false);
+        }
     }
 
     // Use this for initialization
@@ -150,15 +188,49 @@ public class Player : EntityBase {
 
     void OnInputFire(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
+            if(!mSliding) {
+                if(currentWeapon) {
+                    currentWeapon.FireStart();
+                }
+            }
         }
         else if(dat.state == InputManager.State.Released) {
+            if(currentWeapon) {
+                currentWeapon.FireStop();
+            }
         }
     }
 
     void OnInputPowerNext(InputManager.Info dat) {
+        if(dat.state == InputManager.State.Pressed) {
+            for(int i = 0, max = weapons.Length, toWeaponInd = currentWeaponIndex + 1; i < max; i++) {
+                if(weapons[toWeaponInd] && mStats.IsWeaponAvailable(toWeaponInd)) {
+                    currentWeaponIndex = toWeaponInd;
+                    break;
+                }
+                else {
+                    toWeaponInd++;
+                    if(toWeaponInd >= weapons.Length)
+                        toWeaponInd = 0;
+                }
+            }
+        }
     }
 
     void OnInputPowerPrev(InputManager.Info dat) {
+        if(dat.state == InputManager.State.Pressed) {
+            for(int i = 0, max = weapons.Length, toWeaponInd = currentWeaponIndex - 1; i < max; i++) {
+                if(weapons[toWeaponInd] && mStats.IsWeaponAvailable(toWeaponInd)) {
+                    currentWeaponIndex = toWeaponInd;
+                    break;
+                }
+                else {
+                    toWeaponInd--;
+                    if(toWeaponInd < 0)
+                        toWeaponInd = weapons.Length - 1;
+                }
+            }
+        }
     }
 
     void OnInputJump(InputManager.Info dat) {
@@ -168,6 +240,10 @@ public class Player : EntityBase {
 
                 if(input.GetAxis(0, InputAction.MoveY) < -0.1f && mCtrl.isGrounded) {
                     SetSlide(true);
+
+                    if(currentWeapon) {
+                        currentWeapon.FireStop();
+                    }
                 }
                 else {
                     mCtrl.Jump(true);

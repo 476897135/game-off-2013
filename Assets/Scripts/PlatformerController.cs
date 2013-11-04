@@ -19,7 +19,6 @@ public class PlatformerController : RigidBodyController {
     public float jumpWaterForce = 5f;
     public float jumpForce = 80.0f;
     public float jumpDelay = 0.1f;
-    public float jumpReleaseDelay = 0.05f;
 
     public bool jumpWall = false; //wall jump
     public float jumpWallLockDelay = 0.1f;
@@ -658,13 +657,9 @@ public class PlatformerController : RigidBodyController {
                     body.AddForce(dirRot * Vector3.up * jumpWaterForce);
                 }
                 else {
-                    if(Time.fixedTime - mJumpLastTime >= jumpDelay || collisionFlags == CollisionFlags.Above) {
+                    if(!mJumpInputDown || Time.fixedTime - mJumpLastTime >= jumpDelay || collisionFlags == CollisionFlags.Above) {
                         mJump = false;
                         lockDrag = false;
-                    }
-                    else if(!mJumpInputDown && Time.fixedTime - mJumpLastTime >= jumpReleaseDelay) {
-                        lockDrag = false;
-                        mJump = false;
                     }
                     else if(localVelocity.y < airMaxSpeed) {
                         body.AddForce(dirRot * Vector3.up * jumpForce);
@@ -696,7 +691,7 @@ public class PlatformerController : RigidBodyController {
             //boost up
             else if(localVelocity.y >= 0.0f) {
                 float curT = Time.fixedTime - mWallStickLastTime;
-                if(curT <= wallStickUpDelay && (curT <= jumpReleaseDelay || Main.instance.input.IsDown(0, jumpInput))) {
+                if(curT <= wallStickUpDelay && Main.instance.input.IsDown(0, jumpInput)) {
                     Vector3 upDir = dirRot * Vector3.up;
                     upDir = M8.MathUtil.Slide(upDir, mWallStickCollInfo.normal);
 
