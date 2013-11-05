@@ -54,6 +54,11 @@ public class PlatformController : MonoBehaviour {
     }
 
     void OnDisable() {
+        foreach(PlatformerController platformer in mPlatformers) {
+            if(platformer)
+                platformer._PlatformSweep(false, 0);
+        }
+
         mPlatformers.Clear();
         mCurPlatformerSweep.Clear();
     }

@@ -2,14 +2,27 @@
 using System.Collections;
 
 public class DamageTrigger : MonoBehaviour {
+    public delegate void GenericCallback(DamageTrigger trigger, GameObject victim);
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+    public event GenericCallback damageCallback;
+
+    private Damage mDmg;
+
+    public Damage damage { get { return mDmg; } }
+
+    void OnDestroy() {
+        damageCallback = null;
+    }
+
+    void Awake() {
+        mDmg = GetComponent<Damage>();
+    }
+
+    void OnTriggerStay(Collider col) {
+        mDmg.CallDamageTo(col.gameObject);
+
+        if(damageCallback != null) {
+            damageCallback(this, col.gameObject);
+        }
+    }
 }

@@ -403,7 +403,11 @@ public class PlatformerController : RigidBodyController {
 
             for(int i = 0; i < mCollCount; i++) {
                 CollideInfo inf = mColls[i];
-                if(((1 << inf.collider.gameObject.layer) & plankLayer) != 0) {
+                if(inf.collider == null || inf.collider.gameObject == null || !inf.collider.gameObject.activeInHierarchy) {
+                    RemoveColl(i);
+                    i--;
+                }
+                else if(((1 << inf.collider.gameObject.layer) & plankLayer) != 0) {
                     plankFound = true;
                     plankCollFlag = inf.flag;
                     if(plankCollFlag != CollisionFlags.Below) {

@@ -13,7 +13,8 @@ public class Projectile : EntityBase {
         None,
         End,
         Stop,
-        Bounce
+        Bounce,
+        BounceFixedForce
     }
 
     public bool simple; //don't use rigidbody, in fact, don't add it to the go if this is true
@@ -27,6 +28,8 @@ public class Projectile : EntityBase {
 
     public float force;
 
+    public float speedLimit;
+
     public float seekStartDelay = 0.0f;
     public float seekVelocity;
     public float seekVelocityCap = 5.0f;
@@ -36,6 +39,7 @@ public class Projectile : EntityBase {
 
     public bool releaseOnDie;
     public float dieDelay;
+    public bool releaseOnSleep;
 
     public LayerMask explodeMask;
     public float explodeForce;
@@ -51,12 +55,13 @@ public class Projectile : EntityBase {
     public float oscillateForce;
     public float oscillateDelay;*/
 
-    private Vector3 mActiveForce;
-    private Vector3 mStartDir = Vector3.zero;
-    private Transform mSeek = null;
     private bool mSpawning = false;
 
-    private Vector3 mCurVelocity; //only use by simple
+    protected Vector3 mActiveForce;
+    protected Vector3 mStartDir = Vector3.zero;
+    protected Transform mSeek = null;
+
+    protected Vector3 mCurVelocity; //only use by simple
 
     private Damage mDamage;
 
@@ -67,7 +72,7 @@ public class Projectile : EntityBase {
         Projectile ret = Spawn<Projectile>(group, typeName, startPos);
         if(ret != null) {
             ret.mStartDir = dir;
-            ret.seek = seek;
+            ret.mSeek = seek;
         }
 
         return ret;
@@ -77,6 +82,17 @@ public class Projectile : EntityBase {
         get { return mSeek; }
         set {
             mSeek = value;
+
+            if(mSeek) {
+                if((State)state == State.Active) {
+                    state = (int)State.Seek;
+                }
+            }
+            else {
+                if((State)state == State.Seek) {
+                    state = (int)State.Active;
+                }
+            }
         }
     }
 
@@ -99,11 +115,23 @@ public class Projectile : EntityBase {
             collider.enabled = false;
 
         mDamage = GetComponent<Damage>();
+
+        if(!FSM)
+            autoSpawnFinish = true;
     }
 
     // Use this for initialization
     protected override void Start() {
         base.Start();
+    }
+
+    protected override void ActivatorSleep() {
+        base.ActivatorSleep();
+
+        if(releaseOnSleep) {
+            activator.ForceActivate();
+            Release();
+        }
     }
 
     public override void SpawnFinish() {
@@ -169,39 +197,53 @@ public class Projectile : EntityBase {
         switch((State)state) {
             case State.Seek:
             case State.Active:
-                if(collider)
-                    collider.enabled = true;
+                if(!simple) {
+                    if(collider)
+                        collider.enabled = true;
 
-                if(rigidbody)
-                    rigidbody.detectCollisions = true;
+                    if(rigidbody)
+                        rigidbody.detectCollisions = true;
+                }
                 break;
 
             case State.Dying:
                 CancelInvoke();
 
-                if(collider)
-                    collider.enabled = false;
+                if(simple)
+                    mCurVelocity = Vector3.zero;
+                else {
+                    if(collider)
+                        collider.enabled = false;
 
-                if(rigidbody) {
-                    rigidbody.detectCollisions = false;
-                    rigidbody.velocity = Vector3.zero;
+                    if(rigidbody) {
+                        rigidbody.detectCollisions = false;
+                        rigidbody.velocity = Vector3.zero;
+                    }
                 }
 
                 if(explodeOnDeath && explodeRadius > 0.0f) {
                     DoExplode();
                 }
 
-                if(releaseOnDie)
-                    Invoke("Release", dieDelay);
+                if(releaseOnDie) {
+                    if(dieDelay > 0)
+                        Invoke("Release", dieDelay);
+                    else
+                        Release();
+                }
                 break;
 
             case State.Invalid:
-                if(collider)
-                    collider.enabled = false;
+                if(simple)
+                    mCurVelocity = Vector3.zero;
+                else {
+                    if(collider)
+                        collider.enabled = false;
 
-                if(rigidbody) {
-                    rigidbody.detectCollisions = false;
-                    rigidbody.velocity = Vector3.zero;
+                    if(rigidbody) {
+                        rigidbody.detectCollisions = false;
+                        rigidbody.velocity = Vector3.zero;
+                    }
                 }
                 break;
         }
@@ -219,20 +261,40 @@ public class Projectile : EntityBase {
         return false;
     }
 
-    void ApplyContact(GameObject go, Vector3 normal) {
+    protected virtual void ApplyContact(GameObject go, Vector3 normal) {
         switch(contactType) {
             case ContactType.End:
                 state = (int)State.Dying;
                 break;
 
             case ContactType.Stop:
-                if(rigidbody != null)
+                if(simple)
+                    mCurVelocity = Vector3.zero;
+                else if(rigidbody != null)
                     rigidbody.velocity = Vector3.zero;
                 break;
 
             case ContactType.Bounce:
-                if(rigidbody != null) {
-                    rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, normal);
+                if(simple) {
+                    mCurVelocity = Vector3.Reflect(mCurVelocity, normal);
+                }
+                else {
+                    if(rigidbody != null) {
+                        rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, normal);
+                    }
+
+                    mActiveForce = Vector3.Reflect(mActiveForce, normal);
+                }
+                break;
+
+            case ContactType.BounceFixedForce:
+                if(simple) {
+                    mCurVelocity = Vector3.Reflect(mCurVelocity, normal);
+                }
+                else {
+                    if(rigidbody != null) {
+                        rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, normal);
+                    }
                 }
                 break;
         }
@@ -259,7 +321,12 @@ public class Projectile : EntityBase {
     }
 
     void OnSeekStart() {
-        state = (int)State.Seek;
+        if((State)state != State.Dying) {
+            if(mSeek)
+                state = (int)State.Seek;
+            else
+                state = (int)State.Active;
+        }
     }
 
     void OnUpUpdate() {
@@ -284,6 +351,7 @@ public class Projectile : EntityBase {
             //check if hit something
             RaycastHit hit;
             if(Physics.SphereCast(curPos, simpleRadius, dir, out hit, d, simpleLayerMask)) {
+                transform.position = hit.point + hit.normal * simpleRadius;
                 ApplyContact(hit.collider.gameObject, hit.normal);
             }
         }
@@ -300,8 +368,16 @@ public class Projectile : EntityBase {
                     DoSimple();
                 }
                 else {
-                    if(rigidbody != null)
+                    if(rigidbody != null) {
+                        if(speedLimit > 0.0f) {
+                            float sqrSpd = rigidbody.velocity.sqrMagnitude;
+                            if(sqrSpd > speedLimit * speedLimit) {
+                                rigidbody.velocity = (rigidbody.velocity / Mathf.Sqrt(sqrSpd)) * speedLimit;
+                            }
+                        }
+
                         rigidbody.AddForce(mActiveForce);
+                    }
                 }
                 break;
 
