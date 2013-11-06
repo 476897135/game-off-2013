@@ -37,6 +37,7 @@ public class PlatformerController : RigidBodyController {
     public float wallStickUpForce = 60f; //slightly move up the wall
     public float wallStickForce = 40f; //move towards the wall
     public float wallStickDownSpeedCap = 5.0f; //reduce speed upon sticking to wall if going downward, 'friction'
+    public LayerMask wallStickInvalidMask; //layer masks that do not allow wall stick
 
     public string ladderTag = "Ladder";
     public LayerMask ladderLayer;
@@ -460,7 +461,7 @@ public class PlatformerController : RigidBodyController {
                 if(collisionFlags == CollisionFlags.Sides) {
                     for(int i = 0; i < mCollCount; i++) {
                         CollideInfo inf = mColls[i];
-                        if(inf.flag == CollisionFlags.Sides) {
+                        if(inf.flag == CollisionFlags.Sides && (wallStickInvalidMask == 0 || ((1<<inf.collider.gameObject.layer) & wallStickInvalidMask) == 0)) {
                             float a = Vector3.Angle(up, inf.normal);
                             if(a >= 90.0f - wallStickAngleOfs && a <= 90.0f + wallStickAngleOfs) {
                                 //wallStickForce

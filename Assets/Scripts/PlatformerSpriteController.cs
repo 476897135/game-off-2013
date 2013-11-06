@@ -134,6 +134,10 @@ public class PlatformerSpriteController : MonoBehaviour {
                         left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
 
                     }
+                    else if(controller.isOnLadder) {
+                        //TODO
+                        anim.Play(mClimb);
+                    }
                     else {
                         if(wallStickParticle)
                             wallStickParticle.loop = false;

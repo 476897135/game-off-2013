@@ -13,8 +13,14 @@ public class Projectile : EntityBase {
         None,
         End,
         Stop,
-        Bounce,
-        BounceFixedForce
+        Bounce
+    }
+
+    public enum ForceBounceType {
+        None,
+        ContactNormal,
+        ReflectDir,
+        ReflectDirXOnly
     }
 
     public bool simple; //don't use rigidbody, in fact, don't add it to the go if this is true
@@ -46,6 +52,7 @@ public class Projectile : EntityBase {
     public float explodeRadius;
 
     public ContactType contactType = ContactType.End;
+    public ForceBounceType forceBounce = ForceBounceType.None;
 
     public bool explodeOnDeath;
 
@@ -280,21 +287,32 @@ public class Projectile : EntityBase {
                 }
                 else {
                     if(rigidbody != null) {
-                        rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, normal);
+                        Vector3 reflVel = Vector3.Reflect(rigidbody.velocity, normal);
+
+                        rigidbody.velocity = reflVel;
+
+                        //TODO: this is only for 2D
+                        switch(forceBounce) {
+                            case ForceBounceType.ContactNormal:
+                                mActiveForce.Set(normal.x, normal.y, 0.0f);
+                                mActiveForce.Normalize();
+                                mActiveForce *= force;
+                                break;
+
+                            case ForceBounceType.ReflectDir:
+                                mActiveForce.Set(reflVel.x, reflVel.y, 0.0f);
+                                mActiveForce.Normalize();
+                                mActiveForce *= force;
+                                break;
+
+                            case ForceBounceType.ReflectDirXOnly:
+                                mActiveForce.Set(Mathf.Sign(reflVel.x), 0.0f, 0.0f);
+                                mActiveForce *= force;
+                                break;
+                        }
                     }
 
-                    mActiveForce = Vector3.Reflect(mActiveForce, normal);
-                }
-                break;
-
-            case ContactType.BounceFixedForce:
-                if(simple) {
-                    mCurVelocity = Vector3.Reflect(mCurVelocity, normal);
-                }
-                else {
-                    if(rigidbody != null) {
-                        rigidbody.velocity = Vector3.Reflect(rigidbody.velocity, normal);
-                    }
+                    //mActiveForce = Vector3.Reflect(mActiveForce, normal);
                 }
                 break;
         }

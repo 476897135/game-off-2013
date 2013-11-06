@@ -9,13 +9,18 @@ public class Damage : MonoBehaviour {
         Fire,
         Lightning,
         Explosion,
-        Wind
+        Wind,
+
+        NumType
     }
 
     public float amount;
     public Type type = Type.Energy;
 
     public void CallDamageTo(GameObject target) {
-        target.SendMessage(DamageMessage, this, SendMessageOptions.DontRequireReceiver);
+        //target.SendMessage(DamageMessage, this, SendMessageOptions.DontRequireReceiver);
+        Stats stat = target.GetComponent<Stats>();
+        if(stat)
+            stat.ApplyDamage(this);
     }
 }
