@@ -2,7 +2,7 @@
 using System.Collections;
 
 public class Stats : MonoBehaviour {
-    public delegate void ChangeCallback(Stats stat, float prevVal);
+    public delegate void ChangeCallback(Stats stat, float delta);
 
     [System.Serializable]
     public class DamageReduceData {
@@ -21,6 +21,9 @@ public class Stats : MonoBehaviour {
     private float mCurHP;
     private bool mIsInvul;
 
+    private Vector3 mLastDamagePos;
+    private Vector3 mLastDamageNorm;
+
     public float curHP {
         get { return mCurHP; }
 
@@ -31,14 +34,27 @@ public class Stats : MonoBehaviour {
                 mCurHP = v;
 
                 if(changeHPCallback != null)
-                    changeHPCallback(this, prev);
+                    changeHPCallback(this, mCurHP - prev);
             }
         }
     }
 
     public bool isInvul { get { return mIsInvul; } set { mIsInvul = value; } }
 
-    public void ApplyDamage(Damage damage) {
+    /// <summary>
+    /// This is the latest damage hit position when hp was reduced, set during ApplyDamage
+    /// </summary>
+    public Vector3 lastDamagePosition { get { return mLastDamagePos; } }
+
+    /// <summary>
+    /// This is the latest damage hit normal when hp was reduced, set during ApplyDamage
+    /// </summary>
+    public Vector3 lastDamageNormal { get { return mLastDamageNorm; } }
+
+    public void ApplyDamage(Damage damage, Vector3 hitPos, Vector3 hitNorm) {
+        mLastDamagePos = hitPos;
+        mLastDamageNorm = hitNorm;
+
         if(!mIsInvul) {
             float amt = damage.amount;
 

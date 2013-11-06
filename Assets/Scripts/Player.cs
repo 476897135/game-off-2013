@@ -2,10 +2,19 @@
 using System.Collections;
 
 public class Player : EntityBase {
+    public const string clipHurt = "hurt";
+
+    public float hurtForce = 15.0f;
+    public float hurtInvulDelay = 0.5f;
+
+    public float deathFinishDelay = 2.0f;
+
     public float slideForce;
     public float slideSpeedMax;
     public float slideDelay;
     public float slideHeight = 0.79f;
+
+    public GameObject deathGOActivate;
 
     public LayerMask solidMask; //use for standing up, etc.
 
@@ -15,6 +24,8 @@ public class Player : EntityBase {
 
     private PlatformerController mCtrl;
     private PlatformerSpriteController mCtrlSpr;
+
+    private SpriteColorBlink[] mBlinks;
 
     private float mDefaultCtrlMoveForce;
     private float mDefaultCtrlMoveMaxSpeed;
@@ -26,6 +37,8 @@ public class Player : EntityBase {
     private bool mInputEnabled;
     private bool mSliding;
     private float mSlidingLastTime;
+
+    private bool mHurtActive;
 
     private int mCurWeaponInd = -1;
 
@@ -86,6 +99,12 @@ public class Player : EntityBase {
     public PlatformerSpriteController controllerSprite { get { return mCtrlSpr; } }
 
     protected override void StateChanged() {
+        switch((EntityState)prevState) {
+            case EntityState.Hurt:
+                mHurtActive = false;
+                break;
+        }
+
         switch((EntityState)state) {
             case EntityState.Normal:
                 inputEnabled = true;
@@ -93,16 +112,44 @@ public class Player : EntityBase {
 
             case EntityState.Hurt:
                 inputEnabled = false;
+
+                mCtrlSpr.PlayOneTimeClip(clipHurt);
+
+                Blink(hurtInvulDelay);
+
+                StartCoroutine(DoHurtForce(mStats.lastDamageNormal));
                 break;
 
             case EntityState.Dead:
+                mCtrl.enabled = false;
+                rigidbody.isKinematic = true;
+                rigidbody.detectCollisions = false;
+                collider.enabled = false;
+
                 inputEnabled = false;
+
+                mCtrlSpr.anim.gameObject.SetActive(false);
+
+                if(deathGOActivate)
+                    deathGOActivate.SetActive(true);
+
+                PlayerStats.curLife--;
+
+                StartCoroutine(DoDeathFinishDelay());
                 break;
 
             case EntityState.Invalid:
                 inputEnabled = false;
                 break;
         }
+    }
+
+    protected override void SetBlink(bool blink) {
+        foreach(SpriteColorBlink blinker in mBlinks) {
+            blinker.enabled = blink;
+        }
+
+        mStats.isInvul = blink;
     }
 
     protected override void OnDespawned() {
@@ -149,16 +196,28 @@ public class Player : EntityBase {
 
         mCtrlSpr = GetComponent<PlatformerSpriteController>();
 
+        mCtrlSpr.oneTimeClipFinishCallback += OnSpriteCtrlOneTimeClipEnd;
+
         mCapsuleColl = collider as CapsuleCollider;
         mDefaultColliderCenter = mCapsuleColl.center;
         mDefaultColliderHeight = mCapsuleColl.height;
 
         mStats = GetComponent<PlayerStats>();
 
+        mStats.changeHPCallback += OnStatsHPChange;
+
         foreach(Weapon weapon in weapons) {
             if(weapon)
                 weapon.gameObject.SetActive(false);
         }
+
+        mBlinks = GetComponentsInChildren<SpriteColorBlink>(true);
+        foreach(SpriteColorBlink blinker in mBlinks) {
+            blinker.enabled = false;
+        }
+
+        if(deathGOActivate)
+            deathGOActivate.SetActive(false);
     }
 
     // Use this for initialization
@@ -166,6 +225,8 @@ public class Player : EntityBase {
         base.Start();
 
         //initialize variables from other sources (for communicating with managers, etc.)
+        LevelController.CheckpointApplyTo(transform);
+        LevelController.CheckpointApplyTo(CameraController.instance.transform);
     }
 
     void Update() {
@@ -181,6 +242,56 @@ public class Player : EntityBase {
             if(Time.time - mSlidingLastTime >= slideDelay) {
                 SetSlide(false);
             }
+        }
+    }
+
+    //stats
+
+    void OnStatsHPChange(Stats stat, float delta) {
+        if(delta < 0.0f) {
+            if(stat.curHP <= 0.0f) {
+                state = (int)EntityState.Dead;
+            }
+            else {
+                state = (int)EntityState.Hurt;
+            }
+        }
+        else {
+            //healed
+        }
+    }
+
+    IEnumerator DoHurtForce(Vector3 normal) {
+        mHurtActive = true;
+
+        mCtrl.enabled = false;
+        rigidbody.velocity = Vector3.zero;
+        rigidbody.drag = 0.0f;
+
+        WaitForFixedUpdate wait = new WaitForFixedUpdate();
+
+        normal.x = Mathf.Sign(normal.x);
+        normal.y = 0.0f;
+        normal.z = 0.0f;
+
+        while(mHurtActive) {
+            yield return wait;
+
+            rigidbody.AddForce(normal * hurtForce);
+        }
+
+        mCtrl.enabled = true;
+        mCtrl.ResetCollision();
+
+        mHurtActive = false;
+    }
+
+    //anim
+
+    void OnSpriteCtrlOneTimeClipEnd(PlatformerSpriteController ctrl, tk2dSpriteAnimationClip clip) {
+        if(clip.name == clipHurt) {
+            if(state == (int)EntityState.Hurt)
+                state = (int)EntityState.Normal;
         }
     }
 
@@ -258,6 +369,8 @@ public class Player : EntityBase {
     void OnInputPause(InputManager.Info dat) {
     }
 
+    //misc
+
     void SetSlide(bool slide) {
         if(mSliding != slide) {
             mSliding = slide;
@@ -311,5 +424,17 @@ public class Player : EntityBase {
         Vector3 d = new Vector3(c.x, (c.y - (mDefaultColliderHeight * 0.5f - mCapsuleColl.radius)) + ofs, c.z);
 
         return !Physics.CheckCapsule(u, d, r, solidMask);
+    }
+
+    IEnumerator DoDeathFinishDelay() {
+        yield return new WaitForSeconds(deathFinishDelay);
+
+        if(PlayerStats.curLife > 0) {
+            Main.instance.sceneManager.Reload();
+        }
+        else {
+            //gameover
+            Debug.Log("gameover");
+        }
     }
 }

@@ -192,7 +192,7 @@ public class Enemy : EntityBase {
         transform.rotation = mSpawnRot;
     }
 
-    void OnStatsHPChange(Stats stat, float prevVal) {
+    void OnStatsHPChange(Stats stat, float delta) {
         if(stat.curHP <= 0.0f) {
             state = (int)EntityState.Dead;
         }

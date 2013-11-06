@@ -268,7 +268,7 @@ public class Projectile : EntityBase {
         return false;
     }
 
-    protected virtual void ApplyContact(GameObject go, Vector3 normal) {
+    protected virtual void ApplyContact(GameObject go, Vector3 pos, Vector3 normal) {
         switch(contactType) {
             case ContactType.End:
                 state = (int)State.Dying;
@@ -319,13 +319,13 @@ public class Projectile : EntityBase {
 
         //do damage
         if(!explodeOnDeath && CheckTag(go.tag)) {
-            mDamage.CallDamageTo(go);
+            mDamage.CallDamageTo(go, pos, normal);
         }
     }
 
     void OnCollisionEnter(Collision collision) {
         foreach(ContactPoint cp in collision.contacts) {
-            ApplyContact(cp.otherCollider.gameObject, cp.normal);
+            ApplyContact(cp.otherCollider.gameObject, cp.point, cp.normal);
         }
 
     }
@@ -370,7 +370,7 @@ public class Projectile : EntityBase {
             RaycastHit hit;
             if(Physics.SphereCast(curPos, simpleRadius, dir, out hit, d, simpleLayerMask)) {
                 transform.position = hit.point + hit.normal * simpleRadius;
-                ApplyContact(hit.collider.gameObject, hit.normal);
+                ApplyContact(hit.collider.gameObject, hit.point, hit.normal);
             }
         }
 
@@ -474,7 +474,7 @@ public class Projectile : EntityBase {
 
                 //float distSqr = (col.transform.position - pos).sqrMagnitude;
 
-                mDamage.CallDamageTo(col.gameObject);
+                mDamage.CallDamageTo(col.gameObject, pos, (col.bounds.center - pos).normalized);
             }
         }
     }

@@ -73,8 +73,8 @@ public class EntityDamageBlinker : MonoBehaviour {
         mStarted = true;
     }
 
-    void OnStatsHPChange(Stats stat, float prevVal) {
-        if(prevVal > stat.curHP && stat.curHP > 0.0f) {
+    void OnStatsHPChange(Stats stat, float delta) {
+        if(stat.curHP > 0.0f && delta < 0.0f) {
             mEnt.Blink(blinkDelay);
         }
     }

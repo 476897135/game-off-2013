@@ -3,6 +3,7 @@ using System.Collections;
 
 public class PlatformerSpriteController : MonoBehaviour {
     public delegate void Callback(PlatformerSpriteController ctrl);
+    public delegate void CallbackClip(PlatformerSpriteController ctrl, tk2dSpriteAnimationClip clip);
 
     public enum State {
         None,
@@ -28,6 +29,7 @@ public class PlatformerSpriteController : MonoBehaviour {
     public ParticleSystem wallStickParticle;
 
     public event Callback flipCallback;
+    public event CallbackClip oneTimeClipFinishCallback;
 
     //TODO: queue system
 
@@ -42,11 +44,10 @@ public class PlatformerSpriteController : MonoBehaviour {
     private tk2dSpriteAnimationClip mClimb;
 
     private bool mIsLeft;
-    private bool mAnimationActive = true;
+    private tk2dSpriteAnimationClip mOneTimeClip;
     private State mState;
 
     public bool isLeft { get { return mIsLeft; } }
-    public bool animationActive { get { return mAnimationActive; } set { mAnimationActive = value; } }
 
     public State state {
         get { return mState; }
@@ -58,7 +59,7 @@ public class PlatformerSpriteController : MonoBehaviour {
     }
 
     public void ResetAnimation() {
-        mAnimationActive = true;
+        mOneTimeClip = null;
         mIsLeft = false;
         if(anim && anim.Sprite)
             anim.Sprite.FlipX = false;
@@ -69,13 +70,25 @@ public class PlatformerSpriteController : MonoBehaviour {
         }
     }
 
+    public void PlayOneTimeClip(string clipName) {
+        //assume its loop type is 'once'
+        tk2dSpriteAnimationClip clip = anim.GetClipByName(clipName);
+        if(clip != null) {
+            mOneTimeClip = clip;
+            anim.Play(mOneTimeClip);
+        }
+    }
+
     void OnDestroy() {
         flipCallback = null;
+        oneTimeClipFinishCallback = null;
     }
 
     void Awake() {
         if(anim == null)
             anim = GetComponent<tk2dSpriteAnimator>();
+
+        anim.AnimationCompleted += OnAnimationComplete;
 
         mIdle = anim.GetClipByName(idleClip);
 
@@ -110,82 +123,93 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        if(mAnimationActive) {
-            bool left = mIsLeft;
+        if(mOneTimeClip != null)
+            return;
 
-            switch(mState) {
-                case State.None:
-                    if(controller.isJumpWall) {
-                        anim.Play(mWallJump);
+        bool left = mIsLeft;
 
-                        left = controller.localVelocity.x < 0.0f;
-                    }
-                    else if(controller.isWallStick) {
-                        if(wallStickParticle) {
-                            if(wallStickParticle.isStopped) {
-                                wallStickParticle.Play();
-                            }
+        switch(mState) {
+            case State.None:
+                if(controller.isJumpWall) {
+                    anim.Play(mWallJump);
 
-                            wallStickParticle.loop = true;
+                    left = controller.localVelocity.x < 0.0f;
+                }
+                else if(controller.isWallStick) {
+                    if(wallStickParticle) {
+                        if(wallStickParticle.isStopped) {
+                            wallStickParticle.Play();
                         }
 
-                        anim.Play(mWallStick);
-
-                        left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
-
+                        wallStickParticle.loop = true;
                     }
-                    else if(controller.isOnLadder) {
-                        //TODO
-                        anim.Play(mClimb);
-                    }
-                    else {
-                        if(wallStickParticle)
-                            wallStickParticle.loop = false;
 
-                        if(controller.isGrounded) {
-                            if(controller.moveSide != 0.0f) {
-                                anim.Play(mMove);
-                            }
-                            else {
-                                anim.Play(mIdle);
-                            }
+                    anim.Play(mWallStick);
+
+                    left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
+
+                }
+                else if(controller.isOnLadder) {
+                    //TODO
+                    anim.Play(mClimb);
+                }
+                else {
+                    if(wallStickParticle)
+                        wallStickParticle.loop = false;
+
+                    if(controller.isGrounded) {
+                        if(controller.moveSide != 0.0f) {
+                            anim.Play(mMove);
                         }
                         else {
-                            tk2dSpriteAnimationClip clip;
-
-                            if(controller.localVelocity.y <= 0.0f) {
-                                clip = GetMidAirClip(mDowns);
-                            }
-                            else {
-                                clip = GetMidAirClip(mUps);
-                            }
-
-                            if(clip != null)
-                                anim.Play(clip);
-                        }
-
-                        if(controller.moveSide != 0.0f) {
-                            left = controller.moveSide < 0.0f;
+                            anim.Play(mIdle);
                         }
                     }
-                    break;
+                    else {
+                        tk2dSpriteAnimationClip clip;
 
-                case State.Slide:
-                    anim.Play(mSlide);
+                        if(controller.localVelocity.y <= 0.0f) {
+                            clip = GetMidAirClip(mDowns);
+                        }
+                        else {
+                            clip = GetMidAirClip(mUps);
+                        }
+
+                        if(clip != null)
+                            anim.Play(clip);
+                    }
 
                     if(controller.moveSide != 0.0f) {
                         left = controller.moveSide < 0.0f;
                     }
-                    break;
-            }
+                }
+                break;
 
-            if(mIsLeft != left) {
-                mIsLeft = left;
+            case State.Slide:
+                anim.Play(mSlide);
 
-                anim.Sprite.FlipX = mIsLeft;
+                if(controller.moveSide != 0.0f) {
+                    left = controller.moveSide < 0.0f;
+                }
+                break;
+        }
 
-                if(flipCallback != null)
-                    flipCallback(this);
+        if(mIsLeft != left) {
+            mIsLeft = left;
+
+            anim.Sprite.FlipX = mIsLeft;
+
+            if(flipCallback != null)
+                flipCallback(this);
+        }
+    }
+
+    void OnAnimationComplete(tk2dSpriteAnimator _anim, tk2dSpriteAnimationClip _clip) {
+        if(_clip == mOneTimeClip) {
+            mOneTimeClip = null;
+
+            if(oneTimeClipFinishCallback != null) {
+                oneTimeClipFinishCallback(this, _clip);
             }
         }
     }

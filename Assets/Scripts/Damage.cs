@@ -17,10 +17,10 @@ public class Damage : MonoBehaviour {
     public float amount;
     public Type type = Type.Energy;
 
-    public void CallDamageTo(GameObject target) {
+    public void CallDamageTo(GameObject target, Vector3 hitPos, Vector3 hitNorm) {
         //target.SendMessage(DamageMessage, this, SendMessageOptions.DontRequireReceiver);
         Stats stat = target.GetComponent<Stats>();
         if(stat)
-            stat.ApplyDamage(this);
+            stat.ApplyDamage(this, hitPos, hitNorm);
     }
 }

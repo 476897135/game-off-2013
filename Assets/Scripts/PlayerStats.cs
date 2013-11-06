@@ -8,14 +8,17 @@ public class PlayerStats : Stats {
     public const string hpModFlagsKey = "playerHPMod";
     public const int hpModCount = 8;
     public const float hpMod = 2;
+    public const int defaultNumLives = 3;
 
     public const string lifeCountKey = "playerLife";
 
     public const string weaponFlagsKey = "playerWeapons";
         
     public event ChangeCallback changeMaxHPCallback;
+
+    private float mDefaultMaxHP;
         
-    public int curLife {
+    public static int curLife {
         get {
             return SceneState.instance.GetGlobalValue(lifeCountKey);
         }
@@ -40,6 +43,8 @@ public class PlayerStats : Stats {
     }
 
     protected override void Awake() {
+        mDefaultMaxHP = maxHP;
+
         SceneState.instance.onValueChange += OnSceneStateValue;
 
         ApplyHPMod();
@@ -58,7 +63,7 @@ public class PlayerStats : Stats {
                 numMod++;
         }
 
-        float newMaxHP = numMod * hpMod;
+        float newMaxHP = mDefaultMaxHP + numMod * hpMod;
 
         if(maxHP != newMaxHP) {
             float prevMaxHP = maxHP;
@@ -66,7 +71,7 @@ public class PlayerStats : Stats {
             maxHP = newMaxHP;
 
             if(changeMaxHPCallback != null) {
-                changeMaxHPCallback(this, prevMaxHP);
+                changeMaxHPCallback(this, maxHP - prevMaxHP);
             }
         }
     }
