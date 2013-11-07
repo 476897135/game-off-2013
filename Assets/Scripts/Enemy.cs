@@ -10,6 +10,9 @@ public class Enemy : EntityBase {
 
     public GameObject visibleGO; //the game object to deactivate while dead/respawning
 
+    public string deathSpawnGroup; //upon death, spawn this
+    public string deathSpawnType;
+
     private Stats mStats;
     private bool mRespawnReady;
 
@@ -55,6 +58,10 @@ public class Enemy : EntityBase {
 
                 if(visibleGO)
                     visibleGO.SetActive(false);
+
+                if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
+                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, transform.position, Quaternion.identity);
+                }
 
                 if(toRespawnAuto) {
                     StartCoroutine(DoRespawnWaitDelayKey);

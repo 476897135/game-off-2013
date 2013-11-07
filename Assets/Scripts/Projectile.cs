@@ -58,6 +58,9 @@ public class Projectile : EntityBase {
 
     public bool applyDirToUp;
 
+    public string deathSpawnGroup;
+    public string deathSpawnType;
+
     /*public bool oscillate;
     public float oscillateForce;
     public float oscillateDelay;*/
@@ -237,6 +240,10 @@ public class Projectile : EntityBase {
                         Invoke("Release", dieDelay);
                     else
                         Release();
+                }
+
+                if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
+                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, transform.position, Quaternion.identity);
                 }
                 break;
 

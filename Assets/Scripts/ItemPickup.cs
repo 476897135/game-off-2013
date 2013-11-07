@@ -19,7 +19,7 @@ public class ItemPickup : EntityBase {
 
     private SpriteColorBlink[] mBlinkers;
 
-    void OnTriggerEnter(Collider col) {
+    void OnTriggerStay(Collider col) {
         Player player = col.GetComponent<Player>();
         if(player && player.state != (int)EntityState.Dead && player.state != (int)EntityState.Invalid) {
             switch(type) {
@@ -69,7 +69,12 @@ public class ItemPickup : EntityBase {
                 SoundPlayerGlobal.instance.Play(sound);
             }
 
+            if(collider)
+                collider.enabled = false;
+
             //TODO: dialog?
+
+            Release();
         }
     }
 
@@ -83,13 +88,17 @@ public class ItemPickup : EntityBase {
 
     protected override void OnDespawned() {
         //reset stuff here
+        if(collider)
+            collider.enabled = true;
+
         mSpawned = false;
         mDropActive = false;
-        CancelInvoke("Release");
-
+        
         foreach(SpriteColorBlink blinker in mBlinkers) {
             blinker.enabled = false;
         }
+
+        CancelInvoke();
 
         base.OnDespawned();
     }
@@ -106,7 +115,7 @@ public class ItemPickup : EntityBase {
 
         StartCoroutine(DoDrop());
         Invoke("Release", destroyDelay);
-        Invoke("DoBlink", destroyStartBlinkDelay);
+        Invoke("DoBlinkers", destroyStartBlinkDelay);
     }
 
     protected override void SpawnStart() {
@@ -166,9 +175,9 @@ public class ItemPickup : EntityBase {
         }
     }
 
-    void DoBlink() {
+    void DoBlinkers() {
         foreach(SpriteColorBlink blinker in mBlinkers) {
-            blinker.enabled = false;
+            blinker.enabled = true;
         }
     }
 }
