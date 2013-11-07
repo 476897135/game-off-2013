@@ -45,7 +45,7 @@ public class Player : EntityBase {
     public int currentWeaponIndex {
         get { return mCurWeaponInd; }
         set {
-            if(mCurWeaponInd != value && mStats.IsWeaponAvailable(value) && weapons[value] != null) {
+            if(mCurWeaponInd != value && PlayerStats.IsWeaponAvailable(value) && weapons[value] != null) {
                 int prevWeaponInd = mCurWeaponInd;
                 mCurWeaponInd = value;
 
@@ -64,6 +64,27 @@ public class Player : EntityBase {
             if(mCurWeaponInd >= 0)
                 return weapons[mCurWeaponInd];
             return null;
+        }
+    }
+
+    /// <summary>
+    /// Returns the weapon with the current lowest energy
+    /// </summary>
+    public Weapon lowestEnergyWeapon {
+        get {
+            Weapon lowestWpn = null;
+            for(int i = 0, max = weapons.Length; i < max; i++) {
+                Weapon wpn = weapons[i];
+                if(wpn && wpn.energyType != Weapon.EnergyType.Unlimited && !wpn.isMaxEnergy) {
+                    if(lowestWpn) {
+                        if(wpn.currentEnergy < lowestWpn.currentEnergy)
+                            lowestWpn = wpn;
+                    }
+                    else
+                        lowestWpn = wpn;
+                }
+            }
+            return lowestWpn;
         }
     }
 
@@ -98,6 +119,8 @@ public class Player : EntityBase {
     public PlatformerController controller { get { return mCtrl; } }
     public PlatformerSpriteController controllerSprite { get { return mCtrlSpr; } }
 
+    public Stats stats { get { return mStats; } }
+
     protected override void StateChanged() {
         switch((EntityState)prevState) {
             case EntityState.Hurt:
@@ -126,7 +149,14 @@ public class Player : EntityBase {
                 rigidbody.detectCollisions = false;
                 collider.enabled = false;
 
+                //disable all input
                 inputEnabled = false;
+
+                InputManager input = Main.instance != null ? Main.instance.input : null;
+                if(input) {
+                    input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
+                }
+                //
 
                 mCtrlSpr.anim.gameObject.SetActive(false);
 
@@ -205,10 +235,13 @@ public class Player : EntityBase {
         mStats = GetComponent<PlayerStats>();
 
         mStats.changeHPCallback += OnStatsHPChange;
+        mStats.changeMaxHPCallback += OnStatsHPMaxChange;
 
         foreach(Weapon weapon in weapons) {
-            if(weapon)
+            if(weapon) {
+                weapon.energyChangeCallback += OnWeaponEnergyCallback;
                 weapon.gameObject.SetActive(false);
+            }
         }
 
         mBlinks = GetComponentsInChildren<SpriteColorBlink>(true);
@@ -245,7 +278,7 @@ public class Player : EntityBase {
         }
     }
 
-    //stats
+    //stats/weapons
 
     void OnStatsHPChange(Stats stat, float delta) {
         if(delta < 0.0f) {
@@ -259,6 +292,12 @@ public class Player : EntityBase {
         else {
             //healed
         }
+    }
+
+    void OnStatsHPMaxChange(Stats stat, float delta) {
+    }
+
+    void OnWeaponEnergyCallback(Weapon weapon, float delta) {
     }
 
     IEnumerator DoHurtForce(Vector3 normal) {
@@ -315,7 +354,7 @@ public class Player : EntityBase {
     void OnInputPowerNext(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
             for(int i = 0, max = weapons.Length, toWeaponInd = currentWeaponIndex + 1; i < max; i++) {
-                if(weapons[toWeaponInd] && mStats.IsWeaponAvailable(toWeaponInd)) {
+                if(weapons[toWeaponInd] && PlayerStats.IsWeaponAvailable(toWeaponInd)) {
                     currentWeaponIndex = toWeaponInd;
                     break;
                 }
@@ -331,7 +370,7 @@ public class Player : EntityBase {
     void OnInputPowerPrev(InputManager.Info dat) {
         if(dat.state == InputManager.State.Pressed) {
             for(int i = 0, max = weapons.Length, toWeaponInd = currentWeaponIndex - 1; i < max; i++) {
-                if(weapons[toWeaponInd] && mStats.IsWeaponAvailable(toWeaponInd)) {
+                if(weapons[toWeaponInd] && PlayerStats.IsWeaponAvailable(toWeaponInd)) {
                     currentWeaponIndex = toWeaponInd;
                     break;
                 }
@@ -430,10 +469,18 @@ public class Player : EntityBase {
         yield return new WaitForSeconds(deathFinishDelay);
 
         if(PlayerStats.curLife > 0) {
+            //apply changes
+            foreach(Weapon weapon in weapons) {
+                if(weapon)
+                    weapon.SaveEnergySpent();
+            }
+
             Main.instance.sceneManager.Reload();
         }
         else {
             //gameover
+            LevelController.ResetData(true);
+
             Debug.Log("gameover");
         }
     }

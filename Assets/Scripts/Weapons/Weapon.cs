@@ -2,6 +2,19 @@
 using System.Collections;
 
 public class Weapon : MonoBehaviour {
+    public enum EnergyType {
+        Unlimited = -1,
+
+        LightningFork,
+        ConflictResolver,
+        TimeWarp,
+        Whip,
+        HoolaHoop,
+        Clone,
+
+        NumTypes
+    }
+
     public enum AnimState {
         normal,
         attack,
@@ -10,6 +23,8 @@ public class Weapon : MonoBehaviour {
 
     [System.Serializable]
     public class ChargeInfo {
+        public float energyCost;
+
         public GameObject go;
         public float delay;
         public string projType;
@@ -31,6 +46,13 @@ public class Weapon : MonoBehaviour {
         }
     }
 
+    public delegate void ChangeValueCallback(Weapon weapon, float delta);
+
+    public const string weaponEnergyPrefix = "wpnE";
+    public const float weaponEnergyDefaultMax = 32.0f;
+
+    public EnergyType energyType = EnergyType.Unlimited;
+
     public tk2dSpriteAnimator anim;
 
     public string projGroup = "proj";
@@ -39,9 +61,11 @@ public class Weapon : MonoBehaviour {
     //first charge is the regular fire
     public ChargeInfo[] charges;
 
+    public event ChangeValueCallback energyChangeCallback;
+
     [SerializeField]
     Transform _spawnPoint;
-        
+
     private tk2dSpriteAnimationClip[] mClips;
 
     private bool mFireActive = false;
@@ -51,8 +75,46 @@ public class Weapon : MonoBehaviour {
     private bool mFireCancel = false;
     private float mCurTime;
 
+    private float mCurEnergy;
+
+    public static string GetWeaponEnergyKey(EnergyType type) {
+        if(type == EnergyType.Unlimited || type == EnergyType.NumTypes)
+            return null;
+
+        return weaponEnergyPrefix + ((int)type);
+    }
+
+    public static void ResetEnergies() {
+        for(int i = 0; i < (int)EnergyType.NumTypes; i++) {
+            string key = weaponEnergyPrefix + i;
+            SceneState.instance.SetGlobalValueFloat(key, weaponEnergyDefaultMax, false);
+        }
+    }
+
+    public string energyTypeKey {
+        get { return GetWeaponEnergyKey(energyType); }
+    }
+
+    public float currentEnergy {
+        get { return mCurEnergy; }
+        set {
+            float newVal = Mathf.Clamp(value, 0.0f, weaponEnergyDefaultMax);
+            if(mCurEnergy != newVal) {
+                float prevVal = mCurEnergy;
+                mCurEnergy = newVal;
+
+                if(energyChangeCallback != null)
+                    energyChangeCallback(this, mCurEnergy - prevVal);
+            }
+        }
+    }
+
+    public bool isMaxEnergy {
+        get { return mCurEnergy >= weaponEnergyDefaultMax; }
+    }
+
     public bool canFire {
-        get { return mCurProjCount < projMax; }
+        get { return mCurProjCount < projMax && (energyType == EnergyType.Unlimited || mCurEnergy >= charges[mCurChargeLevel].energyCost); }
     }
 
     public bool isFireActive {
@@ -60,8 +122,8 @@ public class Weapon : MonoBehaviour {
     }
 
     public Vector3 spawnPoint {
-        get { 
-            Vector3 pt = _spawnPoint ? _spawnPoint.position : transform.position; 
+        get {
+            Vector3 pt = _spawnPoint ? _spawnPoint.position : transform.position;
             pt.z = 0.0f;
             return pt;
         }
@@ -74,6 +136,16 @@ public class Weapon : MonoBehaviour {
             }
 
             return new Vector3(Mathf.Sign(transform.lossyScale.x), 0.0f, 0.0f);
+        }
+    }
+
+    /// <summary>
+    /// Call this when restarting level, usu. after death
+    /// </summary>
+    public void SaveEnergySpent() {
+        string key = energyTypeKey;
+        if(!string.IsNullOrEmpty(key)) {
+            SceneState.instance.SetGlobalValueFloat(key, mCurEnergy, false);
         }
     }
 
@@ -110,6 +182,9 @@ public class Weapon : MonoBehaviour {
             if(ret) {
                 mCurProjCount++;
                 ret.releaseCallback += OnProjRelease;
+
+                //spend energy
+                currentEnergy -= charges[chargeInd].energyCost;
             }
         }
 
@@ -141,6 +216,8 @@ public class Weapon : MonoBehaviour {
     void OnDestroy() {
         if(anim)
             anim.AnimationCompleted -= OnAnimationClipEnd;
+
+        energyChangeCallback = null;
     }
 
     protected virtual void Awake() {
@@ -151,6 +228,11 @@ public class Weapon : MonoBehaviour {
         foreach(ChargeInfo inf in charges) {
             inf.Enable(false);
         }
+
+        //get saved energy spent
+        string key = energyTypeKey;
+        if(!string.IsNullOrEmpty(key))
+            mCurEnergy = SceneState.instance.GetGlobalValueFloat(key, weaponEnergyDefaultMax);
     }
 
     // Use this for initialization
@@ -166,10 +248,11 @@ public class Weapon : MonoBehaviour {
         mCurChargeLevel = 0;
 
         //fire projectile
-        CreateProjectile(mCurChargeLevel, null);
+        if(canFire)
+            CreateProjectile(mCurChargeLevel, null);
 
         //do charging
-        
+
         if(charges.Length > 1) {
             mFireActive = true;
 
@@ -180,19 +263,27 @@ public class Weapon : MonoBehaviour {
                 //check if ready for next charge level
                 int nextLevel = mCurChargeLevel + 1;
                 if(nextLevel < charges.Length) {
-                    mCurTime += Time.fixedDeltaTime;
-                    if(mCurTime >= charges[nextLevel].delay) {
-                        //hide previous charge gameobject and activate/set new one
-                        if(mCurChargeLevel > 0)
-                            charges[mCurChargeLevel].Enable(false);
+                    //check if we can fire this charge
+                    if(currentEnergy >= charges[nextLevel].energyCost) {
+                        mCurTime += Time.fixedDeltaTime;
+                        if(mCurTime >= charges[nextLevel].delay) {
+                            //hide previous charge gameobject and activate/set new one
+                            if(mCurChargeLevel > 0)
+                                charges[mCurChargeLevel].Enable(false);
 
-                        charges[nextLevel].Enable(true);
+                            charges[nextLevel].Enable(true);
 
-                        mCurChargeLevel = nextLevel;
+                            mCurChargeLevel = nextLevel;
 
-                        //beginning first charge
-                        if(mCurChargeLevel == 1)
-                            anim.Play(mClips[(int)AnimState.charge]);
+                            //beginning first charge
+                            if(mCurChargeLevel == 1)
+                                anim.Play(mClips[(int)AnimState.charge]);
+                        }
+                    }
+                    else {
+                        //if we are only in level 0, then just stop
+                        if(mCurChargeLevel == 0)
+                            break;
                     }
                 }
 
@@ -222,7 +313,7 @@ public class Weapon : MonoBehaviour {
     //> AnimationCompleted
     void OnAnimationClipEnd(tk2dSpriteAnimator aAnim, tk2dSpriteAnimationClip aClip) {
         if(aAnim == anim && aClip == mClips[(int)AnimState.attack]) {
-            anim.Play(mClips[(int)AnimState.normal]);    
+            anim.Play(mClips[(int)AnimState.normal]);
         }
     }
 

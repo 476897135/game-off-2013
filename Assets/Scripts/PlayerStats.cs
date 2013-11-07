@@ -28,8 +28,14 @@ public class PlayerStats : Stats {
         }
     }
 
-    public bool IsWeaponAvailable(int index) {
+    public static bool IsWeaponAvailable(int index) {
         return SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
+    }
+
+    public static void AddHPMod(int bit) {
+        if(!SceneState.instance.CheckGlobalFlag(hpModFlagsKey, bit)) {
+            SceneState.instance.SetGlobalFlag(hpModFlagsKey, bit, true, true);
+        }
     }
         
     protected override void OnDestroy() {
@@ -70,8 +76,14 @@ public class PlayerStats : Stats {
 
             maxHP = newMaxHP;
 
+            float delta = maxHP - prevMaxHP;
+                                    
             if(changeMaxHPCallback != null) {
-                changeMaxHPCallback(this, maxHP - prevMaxHP);
+                changeMaxHPCallback(this, delta);
+            }
+
+            if(delta > 0) {
+                curHP += delta;
             }
         }
     }

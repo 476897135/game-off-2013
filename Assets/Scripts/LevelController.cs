@@ -19,7 +19,12 @@ public class LevelController : MonoBehaviour {
     /// <summary>
     /// Call this in gameover, level complete, and level select
     /// </summary>
-    public static void CheckpointReset() {
+    public static void ResetData(bool resetLives) {
         mCheckpointActive = false;
+
+        if(resetLives)
+            PlayerStats.curLife = PlayerStats.defaultNumLives;
+
+        Weapon.ResetEnergies();
     }
 }
