@@ -5,14 +5,13 @@ using System.Collections;
 /// Assumes vertical, just rotate the base for horizontal.
 /// </summary>
 public class UIEnergyBar : MonoBehaviour {
-    public int barCapacity = 32;
-    
     public UISprite icon;
 
     public UISprite bar; //make sure anchor is bottom and it is in tile mode
     public int barHeight = 3; //height of each bar
 
     public UISprite panelTop; //make sure anchor is bottom
+    public float panelTopYOfs;
     public UISprite panelBase; //make sure anchor is bottom
 
     private int mCurMaxBar = 1;
@@ -61,7 +60,7 @@ public class UIEnergyBar : MonoBehaviour {
         }
 
         if(panelTop) {
-            Vector3 topPos = new Vector3(0, h, 0);
+            Vector3 topPos = new Vector3(0, h + panelTopYOfs, 0);
             panelTop.transform.localPosition = topPos;
         }
     }

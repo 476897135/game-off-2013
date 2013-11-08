@@ -136,7 +136,7 @@ public class Player : EntityBase {
             case EntityState.Hurt:
                 inputEnabled = false;
 
-                mCtrlSpr.PlayOneTimeClip(clipHurt);
+                mCtrlSpr.PlayOverrideClip(clipHurt);
 
                 Blink(hurtInvulDelay);
 

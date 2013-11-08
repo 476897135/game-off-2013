@@ -14,6 +14,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     public tk2dSpriteAnimator anim;
     public PlatformerController controller;
 
+    public tk2dSpriteAnimation[] animLibs; //use to swap
+
     public string idleClip = "idle";
     public string moveClip = "move";
 
@@ -44,8 +46,10 @@ public class PlatformerSpriteController : MonoBehaviour {
     private tk2dSpriteAnimationClip mClimb;
 
     private bool mIsLeft;
-    private tk2dSpriteAnimationClip mOneTimeClip;
+    private tk2dSpriteAnimationClip mOverrideClip;
     private State mState;
+    private tk2dSpriteAnimation mDefaultAnimLib;
+    private int mAnimLibIndex = -1; //-1 is default
 
     public bool isLeft { get { return mIsLeft; } }
 
@@ -58,8 +62,26 @@ public class PlatformerSpriteController : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// Swap the animation library, set to -1 to revert to default
+    /// </summary>
+    public int animLibIndex {
+        get { return mAnimLibIndex; }
+        set {
+            if(mAnimLibIndex != value) {
+                mAnimLibIndex = value;
+                if(mAnimLibIndex >= 0 && mAnimLibIndex < animLibs.Length) {
+                    anim.Library = animLibs[mAnimLibIndex];
+                }
+                else {
+                    anim.Library = mDefaultAnimLib;
+                }
+            }
+        }
+    }
+
     public void ResetAnimation() {
-        mOneTimeClip = null;
+        mOverrideClip = null;
         mIsLeft = false;
         if(anim && anim.Sprite)
             anim.Sprite.FlipX = false;
@@ -70,12 +92,19 @@ public class PlatformerSpriteController : MonoBehaviour {
         }
     }
 
-    public void PlayOneTimeClip(string clipName) {
+    public void PlayOverrideClip(string clipName) {
         //assume its loop type is 'once'
         tk2dSpriteAnimationClip clip = anim.GetClipByName(clipName);
         if(clip != null) {
-            mOneTimeClip = clip;
-            anim.Play(mOneTimeClip);
+            mOverrideClip = clip;
+            anim.Play(mOverrideClip);
+        }
+    }
+
+    public void StopOverrideClip() {
+        if(mOverrideClip != null) {
+            anim.Stop();
+            mOverrideClip = null;
         }
     }
 
@@ -87,6 +116,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     void Awake() {
         if(anim == null)
             anim = GetComponent<tk2dSpriteAnimator>();
+
+        mDefaultAnimLib = anim.Library;
 
         anim.AnimationCompleted += OnAnimationComplete;
 
@@ -123,7 +154,7 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-        if(mOneTimeClip != null)
+        if(mOverrideClip != null)
             return;
 
         bool left = mIsLeft;
@@ -205,8 +236,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     }
 
     void OnAnimationComplete(tk2dSpriteAnimator _anim, tk2dSpriteAnimationClip _clip) {
-        if(_clip == mOneTimeClip) {
-            mOneTimeClip = null;
+        if(_clip == mOverrideClip) {
+            mOverrideClip = null;
 
             if(oneTimeClipFinishCallback != null) {
                 oneTimeClipFinishCallback(this, _clip);
