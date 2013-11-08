@@ -51,6 +51,12 @@ public class Weapon : MonoBehaviour {
     public const string weaponEnergyPrefix = "wpnE";
     public const float weaponEnergyDefaultMax = 32.0f;
 
+    [SerializeField]
+    string _iconSpriteRef;
+
+    [SerializeField]
+    string _labelTextRef;
+
     public EnergyType energyType = EnergyType.Unlimited;
 
     public tk2dSpriteAnimator anim;
@@ -90,6 +96,9 @@ public class Weapon : MonoBehaviour {
             SceneState.instance.SetGlobalValueFloat(key, weaponEnergyDefaultMax, false);
         }
     }
+
+    public string iconSpriteRef { get { return _iconSpriteRef; } }
+    public string labelText { get { return GameLocalize.GetText(_labelTextRef); } }
 
     public string energyTypeKey {
         get { return GetWeaponEnergyKey(energyType); }

@@ -20,6 +20,8 @@ public class Player : EntityBase {
 
     public Weapon[] weapons;
 
+    private static Player mInstance;
+
     private PlayerStats mStats;
 
     private PlatformerController mCtrl;
@@ -41,6 +43,8 @@ public class Player : EntityBase {
     private bool mHurtActive;
 
     private int mCurWeaponInd = -1;
+
+    public static Player instance { get { return mInstance; } }
 
     public int currentWeaponIndex {
         get { return mCurWeaponInd; }
@@ -189,6 +193,8 @@ public class Player : EntityBase {
     }
 
     protected override void OnDestroy() {
+        mInstance = null;
+
         //dealloc here
         inputEnabled = false;
 
@@ -212,6 +218,8 @@ public class Player : EntityBase {
     }
 
     protected override void Awake() {
+        mInstance = this;
+
         base.Awake();
 
         //initialize variables

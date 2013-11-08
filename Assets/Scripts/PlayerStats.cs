@@ -28,6 +28,18 @@ public class PlayerStats : Stats {
         }
     }
 
+    public static bool isEnergySubTankAvailable {
+        get {
+            return false;
+        }
+    }
+
+    public static bool isWeaponSubTankAvailable {
+        get {
+            return false;
+        }
+    }
+
     public static bool IsWeaponAvailable(int index) {
         return SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
     }
@@ -35,7 +47,7 @@ public class PlayerStats : Stats {
     public static void AddHPMod(int bit) {
         SceneState.instance.SetGlobalFlag(hpModFlagsKey, bit, true, true);
     }
-        
+                
     protected override void OnDestroy() {
         if(SceneState.instance) {
             SceneState.instance.onValueChange -= OnSceneStateValue;

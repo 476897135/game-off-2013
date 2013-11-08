@@ -5,6 +5,7 @@ using System.Collections;
 /// Assumes vertical, just rotate the base for horizontal.
 /// </summary>
 public class UIEnergyBar : MonoBehaviour {
+    public UILabel label;
     public UISprite icon;
 
     public UISprite bar; //make sure anchor is bottom and it is in tile mode

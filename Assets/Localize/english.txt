@@ -3,4 +3,9 @@
 		"key":"title",
 		"text":"UNKNOWN"
 	},
+	
+	{
+		"key":"stargazer",
+		"text":"STAR GAZER"
+	}
 ]
