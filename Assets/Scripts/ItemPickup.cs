@@ -19,7 +19,7 @@ public class ItemPickup : EntityBase {
 
     private SpriteColorBlink[] mBlinkers;
 
-    void OnTriggerStay(Collider col) {
+    void OnTriggerEnter(Collider col) {
         Player player = col.GetComponent<Player>();
         if(player && player.state != (int)EntityState.Dead && player.state != (int)EntityState.Invalid) {
             switch(type) {
@@ -74,7 +74,14 @@ public class ItemPickup : EntityBase {
 
             //TODO: dialog?
 
-            Release();
+            if(mSpawned) {
+                Release();
+            }
+            else {
+                if(activator)
+                    activator.ForceActivate();
+                gameObject.SetActive(false);
+            }
         }
     }
 

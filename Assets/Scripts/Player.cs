@@ -260,6 +260,10 @@ public class Player : EntityBase {
         //initialize variables from other sources (for communicating with managers, etc.)
         LevelController.CheckpointApplyTo(transform);
         LevelController.CheckpointApplyTo(CameraController.instance.transform);
+
+        //initialize hp stuff
+        HUD.instance.barHP.max = Mathf.CeilToInt(mStats.maxHP);
+        HUD.instance.barHP.current = Mathf.CeilToInt(mStats.curHP);
     }
 
     void Update() {
@@ -288,13 +292,18 @@ public class Player : EntityBase {
             else {
                 state = (int)EntityState.Hurt;
             }
+
+            HUD.instance.barHP.current = Mathf.CeilToInt(stat.curHP);
         }
         else {
             //healed
+            //TODO: pause and fill hp one by one
+            HUD.instance.barHP.current = Mathf.CeilToInt(stat.curHP);
         }
     }
 
     void OnStatsHPMaxChange(Stats stat, float delta) {
+        HUD.instance.barHP.max = Mathf.CeilToInt(stat.maxHP);
     }
 
     void OnWeaponEnergyCallback(Weapon weapon, float delta) {

@@ -33,9 +33,7 @@ public class PlayerStats : Stats {
     }
 
     public static void AddHPMod(int bit) {
-        if(!SceneState.instance.CheckGlobalFlag(hpModFlagsKey, bit)) {
-            SceneState.instance.SetGlobalFlag(hpModFlagsKey, bit, true, true);
-        }
+        SceneState.instance.SetGlobalFlag(hpModFlagsKey, bit, true, true);
     }
         
     protected override void OnDestroy() {
