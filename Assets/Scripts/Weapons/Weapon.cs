@@ -55,6 +55,9 @@ public class Weapon : MonoBehaviour {
     string _iconSpriteRef;
 
     [SerializeField]
+    string _gitGirlSpriteRef;
+
+    [SerializeField]
     string _labelTextRef;
 
     public EnergyType energyType = EnergyType.Unlimited;
@@ -93,6 +96,7 @@ public class Weapon : MonoBehaviour {
     }
 
     public string iconSpriteRef { get { return _iconSpriteRef; } }
+    public string gitGirlSpriteRef { get { return _gitGirlSpriteRef; } }
     public string labelText { get { return GameLocalize.GetText(_labelTextRef); } }
 
     public string energyTypeKey {
@@ -116,7 +120,7 @@ public class Weapon : MonoBehaviour {
     }
 
     public bool isMaxEnergy {
-        get { return mCurEnergy >= weaponEnergyDefaultMax; }
+        get { return energyType == EnergyType.Unlimited || mCurEnergy >= weaponEnergyDefaultMax; }
     }
 
     public bool canFire {

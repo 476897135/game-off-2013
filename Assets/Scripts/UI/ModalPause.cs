@@ -6,6 +6,7 @@ public class ModalPause : UIController {
 
     public UIEnergyBar hpBar;
 
+    public UISprite gitGirl;
     public UILabel lifeLabel;
 
     public GameObject energySubTankBar1;
@@ -32,10 +33,8 @@ public class ModalPause : UIController {
     private int mNumEnergyTank;
     private int mNumWeaponTank;
 
-    private int mEnergySubTankBar1FillW;
-    private int mEnergySubTankBar2FillW;
-    private int mWeaponSubTankBar1FillW;
-    private int mWeaponSubTankBar2FillW;
+    private int mEnergySubTankBarFillW;
+    private int mWeaponSubTankBarFillW;
 
     protected override void OnActive(bool active) {
         if(active) {
@@ -48,11 +47,14 @@ public class ModalPause : UIController {
 
             exit.onClick = OnExitClick;
             options.onClick = OnOptionsClick;
+
+            Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnInputEscape);
         }
         else {
             for(int i = 0, max = mWeapons.Length; i < max; i++) {
                 UIEventListener eventListener = mWeapons[i].GetComponent<UIEventListener>();
                 eventListener.onClick = null;
+                eventListener.onSelect = null;
             }
 
             energySubTank.onClick = null;
@@ -62,6 +64,8 @@ public class ModalPause : UIController {
             options.onClick = null;
 
             mInputLockCounter = 0;
+
+            Main.instance.input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputEscape);
         }
     }
 
@@ -80,10 +84,15 @@ public class ModalPause : UIController {
                 return bar1.name.CompareTo(bar2.name);
             });
 
-        mEnergySubTankBar1FillW = energySubTankBar1Fill.width;
-        mEnergySubTankBar2FillW = energySubTankBar2Fill.width;
-        mWeaponSubTankBar1FillW = weaponSubTankBar1Fill.width;
-        mWeaponSubTankBar2FillW = weaponSubTankBar2Fill.width;
+        for(int i = 0, max = mWeapons.Length; i < max; i++) {
+            UIEnergyBar wpnUI = mWeapons[i];
+            wpnUI.animateEndCallback += OnEnergyAnimStop;
+        }
+
+        hpBar.animateEndCallback += OnEnergyAnimStop;
+
+        mEnergySubTankBarFillW = energySubTankBar1Fill.width;
+        mWeaponSubTankBarFillW = weaponSubTankBar1Fill.width;
     }
 
     void InitSubTanks() {
@@ -100,6 +109,8 @@ public class ModalPause : UIController {
             energySubTank.onClick = OnEnergySubTankClick;
             energySubTankBar1.SetActive(mNumEnergyTank >= 1);
             energySubTankBar2.SetActive(mNumEnergyTank > 1);
+
+            RefreshEnergyTank();
         }
         else {
             energySubTankBar1.SetActive(false);
@@ -114,6 +125,8 @@ public class ModalPause : UIController {
             weaponSubTank.onClick = OnWeaponSubTankClick;
             weaponSubTankBar1.SetActive(mNumWeaponTank >= 1);
             weaponSubTankBar2.SetActive(mNumWeaponTank > 1);
+
+            RefreshWeaponTank();
         }
         else {
             weaponSubTankBar1.SetActive(false);
@@ -133,9 +146,6 @@ public class ModalPause : UIController {
             mNumEnergyTank > 0 ? energyBtnKeys :
                 mNumWeaponTank > 0 ? weaponBtnKeys :
                     exitBtnKeys;
-
-        RefreshEnergyTank();
-        RefreshWeaponTank();
     }
 
     void InitWeapons() {
@@ -167,6 +177,7 @@ public class ModalPause : UIController {
                 wpnUI.current = Mathf.CeilToInt(wpn.currentEnergy);
 
                 eventListener.onClick = OnWeaponClick;
+                eventListener.onSelect = OnWeaponSelect;
 
                 UIButtonKeys buttonKeys = wpnUI.GetComponent<UIButtonKeys>();
 
@@ -206,10 +217,35 @@ public class ModalPause : UIController {
         hpBar.current = Mathf.CeilToInt(Player.instance.stats.curHP);
     }
 
+    void DoTankFill(UISprite bar1, UISprite bar2, int barWidth, int amt) {
+        if(amt > 0) {
+            bar1.gameObject.SetActive(true);
+
+            if(amt > barWidth) {
+                bar1.width = barWidth;
+
+                bar2.gameObject.SetActive(true);
+                bar2.width = amt - barWidth;
+            }
+            else {
+                bar1.width = amt;
+                bar2.gameObject.SetActive(false);
+            }
+        }
+        else {
+            bar1.gameObject.SetActive(false);
+            bar2.gameObject.SetActive(false);
+        }
+    }
+
     void RefreshEnergyTank() {
+        Player player = Player.instance;
+        DoTankFill(energySubTankBar1Fill, energySubTankBar2Fill, mEnergySubTankBarFillW, Mathf.RoundToInt(player.stats.subTankEnergyCurrent));
     }
 
     void RefreshWeaponTank() {
+        Player player = Player.instance;
+        DoTankFill(weaponSubTankBar1Fill, weaponSubTankBar2Fill, mWeaponSubTankBarFillW, Mathf.RoundToInt(player.stats.subTankWeaponCurrent));
     }
 
     void OnWeaponClick(GameObject go) {
@@ -220,6 +256,22 @@ public class ModalPause : UIController {
             if(mWeapons[i].gameObject == go) {
                 //unpause?
                 Player.instance.currentWeaponIndex = i;
+
+                UIModalManager.instance.ModalCloseTop();
+                break;
+            }
+        }
+    }
+
+    void OnWeaponSelect(GameObject go, bool state) {
+        for(int i = 0, max = mWeapons.Length; i < max; i++) {
+            if(mWeapons[i].gameObject == go) {
+                //unpause?
+                Weapon wpn = Player.instance.weapons[i];
+                if(wpn && !string.IsNullOrEmpty(wpn.gitGirlSpriteRef)) {
+                    gitGirl.spriteName = wpn.gitGirlSpriteRef;
+                    gitGirl.MakePixelPerfect();
+                }
                 break;
             }
         }
@@ -229,12 +281,73 @@ public class ModalPause : UIController {
         if(mInputLockCounter > 0)
             return;
 
+        PlayerStats stats = Player.instance.stats;
 
+        float amtTank = stats.subTankEnergyCurrent;
+        float amtNeeded = stats.maxHP - stats.curHP;
+
+        if(amtTank > 0.0f && amtNeeded > 0.0f) {
+            if(amtNeeded > amtTank) {
+                stats.curHP += amtTank;
+                stats.subTankEnergyCurrent = 0.0f;
+            }
+            else {
+                stats.curHP = stats.maxHP;
+                stats.subTankEnergyCurrent -= amtNeeded;
+            }
+
+            mInputLockCounter++;
+            hpBar.currentSmooth = Mathf.CeilToInt(stats.curHP);
+
+            RefreshEnergyTank();
+        }
     }
 
     void OnWeaponSubTankClick(GameObject go) {
         if(mInputLockCounter > 0)
             return;
+
+        Player player = Player.instance;
+        Weapon lowestWpn = player.lowestEnergyWeapon;
+
+        float amtTank = player.stats.subTankWeaponCurrent;
+
+        if(amtTank > 0.0f && lowestWpn != null) {
+
+            float amtNeeded = Weapon.weaponEnergyDefaultMax - lowestWpn.currentEnergy;
+
+            if(amtNeeded > 0.0f) {
+                //fill all weapons
+                if(amtNeeded > amtTank) {
+                    for(int i = 0, max = mWeapons.Length; i < max; i++) {
+                        Weapon wpn = player.weapons[i];
+                        if(wpn && !wpn.isMaxEnergy) {
+                            wpn.currentEnergy += amtTank;
+
+                            mInputLockCounter++;
+                            mWeapons[i].currentSmooth = Mathf.CeilToInt(wpn.currentEnergy);
+                        }
+                    }
+
+                    player.stats.subTankWeaponCurrent = 0.0f;
+                }
+                else {
+                    for(int i = 0, max = mWeapons.Length; i < max; i++) {
+                        Weapon wpn = player.weapons[i];
+                        if(wpn && !wpn.isMaxEnergy) {
+                            wpn.currentEnergy = Weapon.weaponEnergyDefaultMax;
+
+                            mInputLockCounter++;
+                            mWeapons[i].currentSmooth = Mathf.CeilToInt(wpn.currentEnergy);
+                        }
+                    }
+
+                    player.stats.subTankWeaponCurrent -= amtNeeded;
+                }
+
+                RefreshWeaponTank();
+            }
+        }
     }
 
     void OnExitClick(GameObject go) {
@@ -245,5 +358,18 @@ public class ModalPause : UIController {
     void OnOptionsClick(GameObject go) {
         if(mInputLockCounter > 0)
             return;
+    }
+
+    void OnInputEscape(InputManager.Info data) {
+        if(mInputLockCounter > 0)
+            return;
+
+        if(data.state == InputManager.State.Pressed) {
+            UIModalManager.instance.ModalCloseTop();
+        }
+    }
+
+    void OnEnergyAnimStop(UIEnergyBar bar) {
+        mInputLockCounter--;
     }
 }

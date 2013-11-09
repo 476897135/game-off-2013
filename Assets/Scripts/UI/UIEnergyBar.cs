@@ -17,7 +17,7 @@ public class UIEnergyBar : MonoBehaviour {
     public float panelTopYOfs;
     public UISprite panelBase; //make sure anchor is bottom
 
-    public float smoothPerBarDelay = 0.1f; //for when smoothing
+    public float smoothSpeed = 10.0f; //for when smoothing
 
     public event GenericCallback animateEndCallback;
 
@@ -27,10 +27,8 @@ public class UIEnergyBar : MonoBehaviour {
     private bool mIsAnimate;
     private float mCurT;
     private float mEndT;
-    private float mDelay;
-    private float mCurV;
+    private float mDirT;
     private float mLastAnimTime;
-    private float mCurAnimTime;
 
     public int max {
         get { return mCurMaxBar; }
@@ -69,14 +67,11 @@ public class UIEnergyBar : MonoBehaviour {
             if(mCurNumBar != value) {
                 mCurNumBar = value;
                 mEndT = (float)value;
-
-                float numBars = Mathf.Abs(Mathf.Round(mEndT - mCurT));
-                mDelay = numBars * smoothPerBarDelay;
+                mDirT = Mathf.Sign(mEndT - mCurT);
 
                 if(!mIsAnimate) {
                     mIsAnimate = true;
                     mLastAnimTime = Time.realtimeSinceStartup;
-                    mCurAnimTime = 0.0f;
                 }
             }
             else {
@@ -105,8 +100,6 @@ public class UIEnergyBar : MonoBehaviour {
     void OnDisable() {
         mCurT = (float)mCurNumBar;
         mIsAnimate = false;
-        mCurV = 0.0f;
-        mCurAnimTime = 0.0f;
     }
 
     void OnDestroy() {
@@ -138,11 +131,12 @@ public class UIEnergyBar : MonoBehaviour {
     void Update() {
         if(mIsAnimate) {
             float dt = Time.realtimeSinceStartup - mLastAnimTime;
-            mCurT = Mathf.SmoothDamp(mCurT, mEndT, ref mCurV, mDelay, Mathf.Infinity, dt);
+            mCurT += mDirT * smoothSpeed * dt;
             mLastAnimTime = Time.realtimeSinceStartup;
-            mCurAnimTime += dt;
 
-            if(mCurAnimTime >= mDelay) {
+            if((mDirT < 0.0f && mCurT <= mEndT) || (mDirT > 0.0f && mCurT >= mEndT)) {
+                mCurT = (float)mCurNumBar;
+
                 RefreshBars();
 
                 mIsAnimate = false;
