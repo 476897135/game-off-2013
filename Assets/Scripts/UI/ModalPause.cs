@@ -4,6 +4,22 @@ using System.Collections;
 public class ModalPause : UIController {
     public Transform weaponsHolder;
 
+    public UIEnergyBar hpBar;
+
+    public UILabel lifeLabel;
+
+    public GameObject energySubTankBar1;
+    public UISprite energySubTankBar1Fill;
+
+    public GameObject energySubTankBar2;
+    public UISprite energySubTankBar2Fill;
+
+    public GameObject weaponSubTankBar1;
+    public UISprite weaponSubTankBar1Fill;
+
+    public GameObject weaponSubTankBar2;
+    public UISprite weaponSubTankBar2Fill;
+
     public UIEventListener energySubTank;
     public UIEventListener weaponSubTank;
 
@@ -12,11 +28,24 @@ public class ModalPause : UIController {
 
     private UIEnergyBar[] mWeapons;
 
+    private int mInputLockCounter;
+    private int mNumEnergyTank;
+    private int mNumWeaponTank;
+
+    private int mEnergySubTankBar1FillW;
+    private int mEnergySubTankBar2FillW;
+    private int mWeaponSubTankBar1FillW;
+    private int mWeaponSubTankBar2FillW;
+
     protected override void OnActive(bool active) {
         if(active) {
+            InitHP();
             InitSubTanks();
             InitWeapons();
-                        
+
+            //life
+            lifeLabel.text = "x" + PlayerStats.curLife;
+
             exit.onClick = OnExitClick;
             options.onClick = OnOptionsClick;
         }
@@ -31,6 +60,8 @@ public class ModalPause : UIController {
 
             exit.onClick = null;
             options.onClick = null;
+
+            mInputLockCounter = 0;
         }
     }
 
@@ -42,83 +73,102 @@ public class ModalPause : UIController {
 
     }
 
+    void Awake() {
+        mWeapons = weaponsHolder.GetComponentsInChildren<UIEnergyBar>(true);
+        System.Array.Sort(mWeapons,
+            delegate(UIEnergyBar bar1, UIEnergyBar bar2) {
+                return bar1.name.CompareTo(bar2.name);
+            });
+
+        mEnergySubTankBar1FillW = energySubTankBar1Fill.width;
+        mEnergySubTankBar2FillW = energySubTankBar2Fill.width;
+        mWeaponSubTankBar1FillW = weaponSubTankBar1Fill.width;
+        mWeaponSubTankBar2FillW = weaponSubTankBar2Fill.width;
+    }
+
     void InitSubTanks() {
         UIButtonKeys energyBtnKeys = energySubTank.GetComponent<UIButtonKeys>();
         UIButtonKeys weaponBtnKeys = weaponSubTank.GetComponent<UIButtonKeys>();
         UIButtonKeys exitBtnKeys = exit.GetComponent<UIButtonKeys>();
         UIButtonKeys optionsBtnKeys = options.GetComponent<UIButtonKeys>();
 
-        if(PlayerStats.isEnergySubTankAvailable) {
-            energySubTank.gameObject.SetActive(true);
+        mNumEnergyTank = 0;
+        if(PlayerStats.isSubTankEnergy1Acquired) mNumEnergyTank++;
+        if(PlayerStats.isSubTankEnergy2Acquired) mNumEnergyTank++;
 
+        if(mNumEnergyTank > 0) {
             energySubTank.onClick = OnEnergySubTankClick;
+            energySubTankBar1.SetActive(mNumEnergyTank >= 1);
+            energySubTankBar2.SetActive(mNumEnergyTank > 1);
         }
         else {
-            energySubTank.gameObject.SetActive(false);
+            energySubTankBar1.SetActive(false);
+            energySubTankBar2.SetActive(false);
         }
 
-        if(PlayerStats.isWeaponSubTankAvailable) {
-            weaponSubTank.gameObject.SetActive(true);
+        mNumWeaponTank = 0;
+        if(PlayerStats.isSubTankWeapon1Acquired) mNumWeaponTank++;
+        if(PlayerStats.isSubTankWeapon2Acquired) mNumWeaponTank++;
 
+        if(mNumWeaponTank > 0) {
             weaponSubTank.onClick = OnWeaponSubTankClick;
+            weaponSubTankBar1.SetActive(mNumWeaponTank >= 1);
+            weaponSubTankBar2.SetActive(mNumWeaponTank > 1);
         }
         else {
-            energySubTank.gameObject.SetActive(false);
+            weaponSubTankBar1.SetActive(false);
+            weaponSubTankBar2.SetActive(false);
         }
 
-        energyBtnKeys.selectOnDown = PlayerStats.isWeaponSubTankAvailable ? weaponBtnKeys : exitBtnKeys;
+        energyBtnKeys.selectOnDown = mNumWeaponTank > 0 ? weaponBtnKeys : exitBtnKeys;
 
-        weaponBtnKeys.selectOnUp = PlayerStats.isEnergySubTankAvailable ? energyBtnKeys : optionsBtnKeys;
+        weaponBtnKeys.selectOnUp = mNumEnergyTank > 0 ? energyBtnKeys : optionsBtnKeys;
 
         exitBtnKeys.selectOnUp =
-            PlayerStats.isWeaponSubTankAvailable ? weaponBtnKeys :
-                PlayerStats.isEnergySubTankAvailable ? energyBtnKeys :
+            mNumWeaponTank > 0 ? weaponBtnKeys :
+                mNumEnergyTank > 0 ? energyBtnKeys :
                     optionsBtnKeys;
 
         optionsBtnKeys.selectOnDown =
-            PlayerStats.isEnergySubTankAvailable ? energyBtnKeys :
-                PlayerStats.isWeaponSubTankAvailable ? weaponBtnKeys :
+            mNumEnergyTank > 0 ? energyBtnKeys :
+                mNumWeaponTank > 0 ? weaponBtnKeys :
                     exitBtnKeys;
+
+        RefreshEnergyTank();
+        RefreshWeaponTank();
     }
 
     void InitWeapons() {
-        if(mWeapons == null) {
-            mWeapons = weaponsHolder.GetComponentsInChildren<UIEnergyBar>(true);
-            System.Array.Sort(mWeapons,
-                delegate(UIEnergyBar bar1, UIEnergyBar bar2) {
-                    return bar1.name.CompareTo(bar2.name);
-                });
-        }
-
         Player player = Player.instance;
 
         UIButtonKeys firstWeaponButtonKeys = null;
         UIButtonKeys lastWeaponButtonKeys = null;
         UIButtonKeys rightButtonKeys = null;
 
-        if(PlayerStats.isEnergySubTankAvailable)
+        if(PlayerStats.isSubTankEnergy1Acquired || PlayerStats.isSubTankEnergy2Acquired)
             rightButtonKeys = energySubTank.GetComponent<UIButtonKeys>();
-        else if(PlayerStats.isWeaponSubTankAvailable)
+        else if(PlayerStats.isSubTankWeapon1Acquired || PlayerStats.isSubTankWeapon2Acquired)
             rightButtonKeys = weaponSubTank.GetComponent<UIButtonKeys>();
         else
             rightButtonKeys = exit.GetComponent<UIButtonKeys>();
 
         for(int i = 0, max = mWeapons.Length; i < max; i++) {
+            UIEnergyBar wpnUI = mWeapons[i];
             Weapon wpn = i < player.weapons.Length ? player.weapons[i] : null;
 
-            UIEventListener eventListener = wpn.GetComponent<UIEventListener>();
+            UIEventListener eventListener = wpnUI.GetComponent<UIEventListener>();
 
             if(PlayerStats.IsWeaponAvailable(i) && wpn) {
-                mWeapons[i].gameObject.SetActive(true);
-                mWeapons[i].label.text = wpn.labelText;
-                mWeapons[i].SetIconSprite(wpn.iconSpriteRef);
+                wpnUI.gameObject.SetActive(true);
+                wpnUI.label.text = wpn.labelText;
+                wpnUI.SetIconSprite(wpn.iconSpriteRef);
 
-                mWeapons[i].max = Mathf.CeilToInt(Weapon.weaponEnergyDefaultMax);
-                mWeapons[i].current = Mathf.CeilToInt(wpn.currentEnergy);
+                wpnUI.max = Mathf.CeilToInt(Weapon.weaponEnergyDefaultMax);
+                wpnUI.current = Mathf.CeilToInt(wpn.currentEnergy);
 
                 eventListener.onClick = OnWeaponClick;
 
-                UIButtonKeys buttonKeys = GetComponent<UIButtonKeys>();
+                UIButtonKeys buttonKeys = wpnUI.GetComponent<UIButtonKeys>();
 
                 buttonKeys.selectOnUp = lastWeaponButtonKeys;
                 buttonKeys.selectOnRight = rightButtonKeys;
@@ -132,11 +182,11 @@ public class ModalPause : UIController {
                 lastWeaponButtonKeys = buttonKeys;
             }
             else {
-                mWeapons[i].gameObject.SetActive(false);
+                wpnUI.gameObject.SetActive(false);
 
                 eventListener.onClick = null;
 
-                UIButtonKeys buttonKeys = GetComponent<UIButtonKeys>();
+                UIButtonKeys buttonKeys = wpnUI.GetComponent<UIButtonKeys>();
                 buttonKeys.selectOnUp = null;
                 buttonKeys.selectOnDown = null;
             }
@@ -151,7 +201,21 @@ public class ModalPause : UIController {
         }
     }
 
+    void InitHP() {
+        hpBar.max = Mathf.CeilToInt(Player.instance.stats.maxHP);
+        hpBar.current = Mathf.CeilToInt(Player.instance.stats.curHP);
+    }
+
+    void RefreshEnergyTank() {
+    }
+
+    void RefreshWeaponTank() {
+    }
+
     void OnWeaponClick(GameObject go) {
+        if(mInputLockCounter > 0)
+            return;
+
         for(int i = 0, max = mWeapons.Length; i < max; i++) {
             if(mWeapons[i].gameObject == go) {
                 //unpause?
@@ -162,14 +226,24 @@ public class ModalPause : UIController {
     }
 
     void OnEnergySubTankClick(GameObject go) {
+        if(mInputLockCounter > 0)
+            return;
+
+
     }
 
     void OnWeaponSubTankClick(GameObject go) {
+        if(mInputLockCounter > 0)
+            return;
     }
 
     void OnExitClick(GameObject go) {
+        if(mInputLockCounter > 0)
+            return;
     }
 
     void OnOptionsClick(GameObject go) {
+        if(mInputLockCounter > 0)
+            return;
     }
 }

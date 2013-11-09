@@ -16,15 +16,7 @@ public class LevelController : MonoBehaviour {
         mCheckpoint = pos;
     }
 
-    /// <summary>
-    /// Call this in gameover, level complete, and level select
-    /// </summary>
-    public static void ResetData(bool resetLives) {
+    public static void CheckpointReset() {
         mCheckpointActive = false;
-
-        if(resetLives)
-            PlayerStats.curLife = PlayerStats.defaultNumLives;
-
-        Weapon.ResetEnergies();
     }
 }

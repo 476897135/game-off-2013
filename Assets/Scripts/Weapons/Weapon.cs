@@ -59,6 +59,8 @@ public class Weapon : MonoBehaviour {
 
     public EnergyType energyType = EnergyType.Unlimited;
 
+    public Color color = Color.white;
+
     public tk2dSpriteAnimator anim;
 
     public string projGroup = "proj";
@@ -90,13 +92,6 @@ public class Weapon : MonoBehaviour {
         return weaponEnergyPrefix + ((int)type);
     }
 
-    public static void ResetEnergies() {
-        for(int i = 0; i < (int)EnergyType.NumTypes; i++) {
-            string key = weaponEnergyPrefix + i;
-            SceneState.instance.SetGlobalValueFloat(key, weaponEnergyDefaultMax, false);
-        }
-    }
-
     public string iconSpriteRef { get { return _iconSpriteRef; } }
     public string labelText { get { return GameLocalize.GetText(_labelTextRef); } }
 
@@ -107,13 +102,15 @@ public class Weapon : MonoBehaviour {
     public float currentEnergy {
         get { return mCurEnergy; }
         set {
-            float newVal = Mathf.Clamp(value, 0.0f, weaponEnergyDefaultMax);
-            if(mCurEnergy != newVal) {
-                float prevVal = mCurEnergy;
-                mCurEnergy = newVal;
+            if(energyType != EnergyType.Unlimited) {
+                float newVal = Mathf.Clamp(value, 0.0f, weaponEnergyDefaultMax);
+                if(mCurEnergy != newVal) {
+                    float prevVal = mCurEnergy;
+                    mCurEnergy = newVal;
 
-                if(energyChangeCallback != null)
-                    energyChangeCallback(this, mCurEnergy - prevVal);
+                    if(energyChangeCallback != null)
+                        energyChangeCallback(this, mCurEnergy - prevVal);
+                }
             }
         }
     }
@@ -149,13 +146,22 @@ public class Weapon : MonoBehaviour {
     }
 
     /// <summary>
-    /// Call this when restarting level, usu. after death
+    /// Call this to preserve energy when going to a new scene, usu. when you die
     /// </summary>
     public void SaveEnergySpent() {
         string key = energyTypeKey;
         if(!string.IsNullOrEmpty(key)) {
             SceneState.instance.SetGlobalValueFloat(key, mCurEnergy, false);
         }
+    }
+
+    public void ResetEnergySpent() {
+        string key = energyTypeKey;
+        if(!string.IsNullOrEmpty(key)) {
+            SceneState.instance.SetGlobalValueFloat(key, weaponEnergyDefaultMax, false);
+        }
+
+        mCurEnergy = weaponEnergyDefaultMax;
     }
 
     public void FireStart() {

@@ -27,7 +27,9 @@ public class ItemPickup : EntityBase {
                     if(player.stats.curHP < player.stats.maxHP)
                         player.stats.curHP += value;
                     else {
-                        //TODO: life tank
+                        player.stats.subTankEnergyCurrent += value;
+
+                        //TODO: play special sound?
                     }
                     break;
 
@@ -39,11 +41,13 @@ public class ItemPickup : EntityBase {
                     else
                         wpn = player.currentWeapon;
 
-                    if(wpn) {
+                    if(wpn && !wpn.isMaxEnergy) {
                         wpn.currentEnergy += value;
                     }
                     else {
-                        //TODO: energy tank
+                        player.stats.subTankWeaponCurrent += value;
+
+                        //TODO: play special sound?
                     }
                     break;
 
@@ -55,13 +59,22 @@ public class ItemPickup : EntityBase {
                     PlayerStats.AddHPMod(bit);
                     break;
 
-                case ItemType.HealthTank:
+                case ItemType.EnergyTank:
+                    if(bit == 0)
+                        player.stats.AcquireSubTankEnergy1();
+                    else
+                        player.stats.AcquireSubTankEnergy2();
                     break;
 
-                case ItemType.EnergyTank:
+                case ItemType.WeaponTank:
+                    if(bit == 0)
+                        player.stats.AcquireSubTankWeapon1();
+                    else
+                        player.stats.AcquireSubTankWeapon2();
                     break;
 
                 case ItemType.Armor:
+                    player.stats.AcquireArmor();
                     break;
             }
 
@@ -100,7 +113,7 @@ public class ItemPickup : EntityBase {
 
         mSpawned = false;
         mDropActive = false;
-        
+
         foreach(SpriteColorBlink blinker in mBlinkers) {
             blinker.enabled = false;
         }
@@ -156,6 +169,39 @@ public class ItemPickup : EntityBase {
         base.Start();
 
         //initialize variables from other sources (for communicating with managers, etc.)
+
+        //check if we are already collected, depending on type
+        bool doDisable = false;
+
+        switch(type) {
+            case ItemType.HealthUpgrade:
+                doDisable = PlayerStats.IsHPModAcquired(bit);
+                break;
+
+            case ItemType.EnergyTank:
+                if(bit == 0)
+                    doDisable = PlayerStats.isSubTankEnergy1Acquired;
+                else
+                    doDisable = PlayerStats.isSubTankEnergy2Acquired;
+                break;
+
+            case ItemType.WeaponTank:
+                if(bit == 0)
+                    doDisable = PlayerStats.isSubTankWeapon1Acquired;
+                else
+                    doDisable = PlayerStats.isSubTankWeapon2Acquired;
+                break;
+
+            case ItemType.Armor:
+                doDisable = PlayerStats.isArmorAcquired;
+                break;
+        }
+
+        if(doDisable) {
+            if(activator)
+                activator.ForceActivate();
+            gameObject.SetActive(false);
+        }
     }
 
     IEnumerator DoDrop() {

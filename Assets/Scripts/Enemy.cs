@@ -69,7 +69,7 @@ public class Enemy : EntityBase {
                 break;
 
             case EntityState.RespawnWait:
-                Debug.Log("respawn wait");
+                //Debug.Log("respawn wait");
                 RevertTransform();
                 activator.ForceActivate();
                 break;
@@ -81,7 +81,7 @@ public class Enemy : EntityBase {
 
         if(state != (int)EntityState.Invalid) {
             if(mRespawnReady) {
-                Debug.Log("respawned");
+                //Debug.Log("respawned");
 
                 mRespawnReady = false;
                 state = (int)EntityState.Normal;

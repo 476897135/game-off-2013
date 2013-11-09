@@ -4,8 +4,8 @@
     Life,
 
     HealthUpgrade,
-    HealthTank,
     EnergyTank,
+    WeaponTank,
     Armor,
 
     NumTypes

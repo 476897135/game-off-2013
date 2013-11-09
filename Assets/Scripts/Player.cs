@@ -3,7 +3,7 @@ using System.Collections;
 
 public class Player : EntityBase {
     public const string clipHurt = "hurt";
-
+        
     public float hurtForce = 15.0f;
     public float hurtInvulDelay = 0.5f;
 
@@ -44,6 +44,8 @@ public class Player : EntityBase {
 
     private int mCurWeaponInd = -1;
 
+    private int mPauseCounter;
+
     public static Player instance { get { return mInstance; } }
 
     public int currentWeaponIndex {
@@ -58,7 +60,23 @@ public class Player : EntityBase {
                     weapons[prevWeaponInd].gameObject.SetActive(false);
 
                 //enable new one
-                weapons[mCurWeaponInd].gameObject.SetActive(true);
+                Weapon weapon = weapons[mCurWeaponInd];
+
+                weapon.gameObject.SetActive(true);
+
+                //show energy thing
+                HUD hud = HUD.instance;
+
+                if(mCurWeaponInd > 0) {
+                    hud.barEnergy.gameObject.SetActive(true);
+                }
+                else {
+                    hud.barEnergy.gameObject.SetActive(false);
+                    hud.barEnergy.SetBarColor(weapon.color);
+                    hud.barEnergy.SetIconSprite(weapon.iconSpriteRef);
+                    hud.barEnergy.max = Mathf.CeilToInt(Weapon.weaponEnergyDefaultMax);
+                    hud.barEnergy.current = Mathf.CeilToInt(weapon.currentEnergy);
+                }
             }
         }
     }
@@ -123,7 +141,7 @@ public class Player : EntityBase {
     public PlatformerController controller { get { return mCtrl; } }
     public PlatformerSpriteController controllerSprite { get { return mCtrlSpr; } }
 
-    public Stats stats { get { return mStats; } }
+    public PlayerStats stats { get { return mStats; } }
 
     protected override void StateChanged() {
         switch((EntityState)prevState) {
@@ -259,6 +277,9 @@ public class Player : EntityBase {
 
         if(deathGOActivate)
             deathGOActivate.SetActive(false);
+
+        HUD.instance.barHP.animateEndCallback += OnEnergyAnimStop;
+        HUD.instance.barEnergy.animateEndCallback += OnEnergyAnimStop;
     }
 
     // Use this for initialization
@@ -305,8 +326,8 @@ public class Player : EntityBase {
         }
         else {
             //healed
-            //TODO: pause and fill hp one by one
-            HUD.instance.barHP.current = Mathf.CeilToInt(stat.curHP);
+            Pause(true);
+            HUD.instance.barHP.currentSmooth = Mathf.CeilToInt(stat.curHP);
         }
     }
 
@@ -315,6 +336,15 @@ public class Player : EntityBase {
     }
 
     void OnWeaponEnergyCallback(Weapon weapon, float delta) {
+        if(weapon == weapons[mCurWeaponInd]) {
+            if(delta <= 0.0f) {
+                HUD.instance.barEnergy.current = Mathf.CeilToInt(weapon.currentEnergy);
+            }
+            else {
+                Pause(true);
+                HUD.instance.barEnergy.currentSmooth = Mathf.CeilToInt(weapon.currentEnergy);
+            }
+        }
     }
 
     IEnumerator DoHurtForce(Vector3 normal) {
@@ -349,6 +379,10 @@ public class Player : EntityBase {
             if(state == (int)EntityState.Hurt)
                 state = (int)EntityState.Normal;
         }
+    }
+
+    void OnEnergyAnimStop(UIEnergyBar bar) {
+        Pause(false);
     }
 
     //input
@@ -423,9 +457,43 @@ public class Player : EntityBase {
     }
 
     void OnInputPause(InputManager.Info dat) {
+        if(dat.state == InputManager.State.Pressed) {
+            if(!UIModalManager.instance.ModalIsInStack("pause")) {
+                UIModalManager.instance.ModalOpen("pause");
+            }
+        }
     }
 
     //misc
+
+    void OnUIModalActive() {
+        Pause(true);
+    }
+
+    void OnUIModalInactive() {
+        Pause(false);
+    }
+
+    void Pause(bool pause) {
+        if(pause) {
+            mPauseCounter++;
+            if(mPauseCounter == 1) {
+                Main.instance.sceneManager.Pause();
+                inputEnabled = false;
+
+                Main.instance.input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
+            }
+        }
+        else {
+            mPauseCounter--;
+            if(mPauseCounter == 0) {
+                Main.instance.sceneManager.Resume();
+                inputEnabled = true;
+
+                Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnInputPause);
+            }
+        }
+    }
 
     void SetSlide(bool slide) {
         if(mSliding != slide) {
@@ -482,23 +550,40 @@ public class Player : EntityBase {
         return !Physics.CheckCapsule(u, d, r, solidMask);
     }
 
-    IEnumerator DoDeathFinishDelay() {
-        yield return new WaitForSeconds(deathFinishDelay);
+    void SceneChange(string nextScene) {
+        //Debug.Log("scene from: " + Application.loadedLevelName + " to: " + nextScene);
 
-        if(PlayerStats.curLife > 0) {
-            //apply changes
+        mStats.SaveStates();
+
+        if(nextScene == Application.loadedLevelName) {
+            //restarting level
             foreach(Weapon weapon in weapons) {
                 if(weapon)
                     weapon.SaveEnergySpent();
             }
+        }
+        else {
+            LevelController.CheckpointReset();
 
+            foreach(Weapon weapon in weapons) {
+                if(weapon)
+                    weapon.ResetEnergySpent();
+            }
+
+            if(nextScene == Scenes.gameover) {
+                PlayerStats.curLife = PlayerStats.defaultNumLives;
+            }
+        }
+    }
+
+    IEnumerator DoDeathFinishDelay() {
+        yield return new WaitForSeconds(deathFinishDelay);
+
+        if(PlayerStats.curLife > 0) {
             Main.instance.sceneManager.Reload();
         }
         else {
-            //gameover
-            LevelController.ResetData(true);
-
-            Debug.Log("gameover");
+            Main.instance.sceneManager.LoadScene(Scenes.gameover);
         }
     }
 }
