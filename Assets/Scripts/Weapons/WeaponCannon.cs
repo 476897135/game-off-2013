@@ -28,18 +28,21 @@ public class WeaponCannon : Weapon {
 
     void Update() {
         if(Player.instance.inputEnabled) {
-            Player.instance.controllerSprite.anim.Sprite.FlipX = false;
-
             float axisY = Main.instance.input.GetAxis(0, InputAction.MoveY);
 
-            mCurRot += axisY * rotateSpeed * Time.deltaTime;
-            if(mCurRot < rotateMin) mCurRot = rotateMin;
-            else if(mCurRot > rotateMax) mCurRot = rotateMax;
+            if(axisY < -0.1f || axisY > 0.1f) {
+                mCurRot += axisY * rotateSpeed * Time.deltaTime;
+                if(mCurRot < rotateMin) mCurRot = rotateMin;
+                else if(mCurRot > rotateMax) mCurRot = rotateMax;
 
-            activeGO.transform.localRotation = Quaternion.AngleAxis(mCurRot, Vector3.forward);
+                PlatformerSpriteController ctrlSpr = Player.instance.controllerSprite;
 
-            if(Player.instance.controllerSprite.isLeft)
-                Player.instance.controllerSprite.anim.Sprite.FlipX = true;
+                ctrlSpr.anim.Sprite.FlipX = false;
+
+                activeGO.transform.localRotation = Quaternion.AngleAxis(mCurRot, Vector3.forward);
+
+                ctrlSpr.anim.Sprite.FlipX = ctrlSpr.isLeft;
+            }
         }
     }
 }
