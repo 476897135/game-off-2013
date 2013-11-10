@@ -136,7 +136,7 @@ public class Weapon : MonoBehaviour {
         get { return energyType == EnergyType.Unlimited || mCurEnergy >= weaponEnergyDefaultMax; }
     }
 
-    public bool canFire {
+    public virtual bool canFire {
         get { return (projMax == 0 || mCurProjCount < projMax) && (energyType == EnergyType.Unlimited || (mCurEnergy > 0.0f && (charges.Length == 0 || mCurEnergy >= charges[mCurChargeLevel].energyCost))); }
     }
 
@@ -155,7 +155,10 @@ public class Weapon : MonoBehaviour {
     public Vector3 dir {
         get {
             if(_spawnPoint) {
-                return new Vector3(Mathf.Sign(_spawnPoint.lossyScale.x), 0.0f, 0.0f);
+                Vector3 r = _spawnPoint.right;
+                if(Player.instance.controllerSprite.isLeft)
+                    r.x *= -1.0f;
+                return r;
             }
 
             return new Vector3(Mathf.Sign(transform.lossyScale.x), 0.0f, 0.0f);
@@ -299,8 +302,7 @@ public class Weapon : MonoBehaviour {
         mFireCancel = false;
 
         //fire projectile
-        if(canFire)
-            CreateProjectile(mCurChargeLevel, null);
+        CreateProjectile(mCurChargeLevel, null);
 
         //do charging
 

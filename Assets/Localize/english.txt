@@ -12,4 +12,8 @@
 		"key":"hoolahoop",
 		"text":"HULA HOOP"
 	},
+	{
+		"key":"cannon",
+		"text":"CONFLICT"
+	},
 ]

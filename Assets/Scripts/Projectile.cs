@@ -56,7 +56,7 @@ public class Projectile : EntityBase {
 
     public bool explodeOnDeath;
 
-    public bool applyDirToUp;
+    public Transform applyDirToUp;
 
     public string deathSpawnGroup;
     public string deathSpawnType;
@@ -145,6 +145,8 @@ public class Projectile : EntityBase {
     }
 
     public override void SpawnFinish() {
+        Debug.Log("start dir: " + mStartDir);
+
         mSpawning = false;
 
         if(decayDelay == 0) {
@@ -181,7 +183,7 @@ public class Projectile : EntityBase {
             }
 
             if(applyDirToUp) {
-                transform.up = mStartDir;
+                applyDirToUp.up = mStartDir;
                 InvokeRepeating("OnUpUpdate", 0.1f, 0.1f);
             }
         }
@@ -189,7 +191,7 @@ public class Projectile : EntityBase {
 
     protected override void SpawnStart() {
         if(applyDirToUp && mStartDir != Vector3.zero) {
-            transform.up = mStartDir;
+            applyDirToUp.up = mStartDir;
         }
 
         mSpawning = true;
@@ -228,7 +230,12 @@ public class Projectile : EntityBase {
                     if(rigidbody) {
                         rigidbody.detectCollisions = false;
                         rigidbody.velocity = Vector3.zero;
+                        rigidbody.angularVelocity = Vector3.zero;
                     }
+                }
+
+                if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
+                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, transform.position, Quaternion.identity);
                 }
 
                 if(explodeOnDeath && explodeRadius > 0.0f) {
@@ -240,10 +247,6 @@ public class Projectile : EntityBase {
                         Invoke("Release", dieDelay);
                     else
                         Release();
-                }
-
-                if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
-                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, transform.position, Quaternion.identity);
                 }
                 break;
 
@@ -257,6 +260,7 @@ public class Projectile : EntityBase {
                     if(rigidbody) {
                         rigidbody.detectCollisions = false;
                         rigidbody.velocity = Vector3.zero;
+                        rigidbody.angularVelocity = Vector3.zero;
                     }
                 }
                 break;
@@ -331,10 +335,14 @@ public class Projectile : EntityBase {
     }
 
     void OnCollisionEnter(Collision collision) {
-        foreach(ContactPoint cp in collision.contacts) {
-            ApplyContact(cp.otherCollider.gameObject, cp.point, cp.normal);
-        }
+        if(state == (int)State.Active || state == (int)State.Seek) {
+            foreach(ContactPoint cp in collision.contacts) {
+                ApplyContact(cp.otherCollider.gameObject, cp.point, cp.normal);
 
+                if(state == (int)State.Dying || state == (int)State.Invalid)
+                    break;
+            }
+        }
     }
 
     /*void OnTrigger(Collider collider) {
@@ -356,11 +364,11 @@ public class Projectile : EntityBase {
 
     void OnUpUpdate() {
         if(simple) {
-            transform.up = mCurVelocity;
+            applyDirToUp.up = mCurVelocity;
         }
         else {
             if(rigidbody != null && rigidbody.velocity != Vector3.zero) {
-                transform.up = rigidbody.velocity;
+                applyDirToUp.up = rigidbody.velocity;
             }
         }
     }

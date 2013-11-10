@@ -3,9 +3,11 @@ using System.Collections;
 
 public class ParticleController : MonoBehaviour {
     public bool playOnEnable;
+    public float playOnEnableDelay = 0.1f;
+
     public bool stopOnDisable;
     public bool clearOnStop;
-
+        
     private bool mStarted;
 
     public void Play(bool withChildren) {
@@ -25,11 +27,24 @@ public class ParticleController : MonoBehaviour {
     }
 
     void OnEnable() {
-        if(mStarted && playOnEnable && !particleSystem.isPlaying)
-            particleSystem.Play();
+        if(mStarted && playOnEnable && !particleSystem.isPlaying) {
+            particleSystem.Clear();
+
+            if(playOnEnableDelay > 0.0f)
+                Invoke("DoPlay", playOnEnableDelay);
+            else
+                DoPlay();
+        }
+            
+    }
+
+    void DoPlay() {
+        particleSystem.Play();
     }
 
     void OnDisable() {
+        CancelInvoke();
+
         if(mStarted && stopOnDisable) {
             particleSystem.Stop();
 
@@ -40,7 +55,6 @@ public class ParticleController : MonoBehaviour {
 
     void Start() {
         mStarted = true;
-        if(playOnEnable)
-            particleSystem.Play();
+        OnEnable();
     }
 }
