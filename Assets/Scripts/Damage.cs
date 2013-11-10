@@ -5,6 +5,7 @@ public class Damage : MonoBehaviour {
     public const string DamageMessage = "OnDamage";
 
     public enum Type {
+        Contact, //body contact
         Energy,
         Fire,
         Lightning,

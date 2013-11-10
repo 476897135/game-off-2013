@@ -51,6 +51,8 @@ public class Weapon : MonoBehaviour {
     public const string weaponEnergyPrefix = "wpnE";
     public const float weaponEnergyDefaultMax = 32.0f;
 
+    public const string weaponFlagsKey = "playerWeapons";
+
     [SerializeField]
     string _iconSpriteRef;
 
@@ -60,14 +62,20 @@ public class Weapon : MonoBehaviour {
     [SerializeField]
     string _labelTextRef;
 
+    public int playerAnimIndex = -1; //-1 is default
+
     public EnergyType energyType = EnergyType.Unlimited;
 
     public Color color = Color.white;
 
     public tk2dSpriteAnimator anim;
+    public GameObject activeGO;
 
     public string projGroup = "proj";
     public int projMax = 4;
+
+    public bool stopOnHurt = false;
+    public bool allowSlide = true; //allow slide while we are active?
 
     //first charge is the regular fire
     public ChargeInfo[] charges;
@@ -79,14 +87,19 @@ public class Weapon : MonoBehaviour {
 
     private tk2dSpriteAnimationClip[] mClips;
 
-    private bool mFireActive = false;
+    protected bool mFireActive = false;
     private int mCurChargeLevel = 0;
     protected int mCurProjCount = 0;
     private bool mStarted = false;
-    private bool mFireCancel = false;
+    protected bool mFireCancel = false;
+
     private float mCurTime;
 
     private float mCurEnergy;
+
+    public static bool IsAvailable(int index) {
+        return true;//SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
+    }
 
     public static string GetWeaponEnergyKey(EnergyType type) {
         if(type == EnergyType.Unlimited || type == EnergyType.NumTypes)
@@ -124,7 +137,7 @@ public class Weapon : MonoBehaviour {
     }
 
     public bool canFire {
-        get { return mCurProjCount < projMax && (energyType == EnergyType.Unlimited || mCurEnergy >= charges[mCurChargeLevel].energyCost); }
+        get { return (projMax == 0 || mCurProjCount < projMax) && (energyType == EnergyType.Unlimited || (mCurEnergy > 0.0f && (charges.Length == 0 || mCurEnergy >= charges[mCurChargeLevel].energyCost))); }
     }
 
     public bool isFireActive {
@@ -168,24 +181,26 @@ public class Weapon : MonoBehaviour {
         mCurEnergy = weaponEnergyDefaultMax;
     }
 
-    public void FireStart() {
+    public virtual void FireStart() {
         if(canFire) {
             StopAllCoroutines();
             StartCoroutine(DoFire());
         }
     }
 
-    public void FireStop() {
+    public virtual void FireStop() {
         mFireActive = false;
     }
 
-    public void FireCancel() {
-        mFireActive = false;
-        mFireCancel = true;
+    public virtual void FireCancel() {
+        if(mFireActive) {
+            mFireActive = false;
+            mFireCancel = true;
+        }
     }
 
     public void ResetCharge() {
-        if(mCurChargeLevel > 0)
+        if(mCurChargeLevel > 0 && charges.Length > 0)
             charges[mCurChargeLevel].Enable(false);
 
         mCurChargeLevel = 0;
@@ -195,7 +210,7 @@ public class Weapon : MonoBehaviour {
     protected virtual Projectile CreateProjectile(int chargeInd, Transform seek) {
         Projectile ret = null;
 
-        string type = charges[chargeInd].projType;
+        string type = charges.Length > 0 ? charges[chargeInd].projType : null;
         if(!string.IsNullOrEmpty(type)) {
             ret = Projectile.Create(projGroup, type, spawnPoint, dir, seek);
             if(ret) {
@@ -212,10 +227,14 @@ public class Weapon : MonoBehaviour {
 
     protected virtual void OnEnable() {
         if(mStarted) {
-            if(anim)
+            if(anim) {
                 anim.gameObject.SetActive(true);
 
-            anim.Play(mClips[(int)AnimState.normal]);
+                anim.Play(mClips[(int)AnimState.normal]);
+            }
+
+            if(activeGO)
+                activeGO.SetActive(true);
         }
     }
 
@@ -223,7 +242,10 @@ public class Weapon : MonoBehaviour {
         if(anim)
             anim.gameObject.SetActive(false);
 
-        if(mCurChargeLevel > 0) {
+        if(activeGO)
+            activeGO.SetActive(false);
+
+        if(mCurChargeLevel > 0 && charges.Length > 0) {
             charges[mCurChargeLevel].Enable(false);
         }
 
@@ -240,9 +262,16 @@ public class Weapon : MonoBehaviour {
     }
 
     protected virtual void Awake() {
-        anim.AnimationCompleted += OnAnimationClipEnd;
+        if(anim) {
+            anim.AnimationCompleted += OnAnimationClipEnd;
 
-        mClips = M8.tk2dUtil.GetSpriteClips(anim, typeof(AnimState));
+            mClips = M8.tk2dUtil.GetSpriteClips(anim, typeof(AnimState));
+
+            anim.gameObject.SetActive(false);
+        }
+
+        if(activeGO)
+            activeGO.SetActive(false);
 
         foreach(ChargeInfo inf in charges) {
             inf.Enable(false);
@@ -261,10 +290,13 @@ public class Weapon : MonoBehaviour {
     }
 
     IEnumerator DoFire() {
-        anim.Stop();
-        anim.Play(mClips[(int)AnimState.attack]);
+        if(anim) {
+            anim.Stop();
+            anim.Play(mClips[(int)AnimState.attack]);
+        }
 
         mCurChargeLevel = 0;
+        mFireCancel = false;
 
         //fire projectile
         if(canFire)
@@ -295,8 +327,11 @@ public class Weapon : MonoBehaviour {
                             mCurChargeLevel = nextLevel;
 
                             //beginning first charge
-                            if(mCurChargeLevel == 1)
-                                anim.Play(mClips[(int)AnimState.charge]);
+                            if(mCurChargeLevel == 1) {
+                                if(anim) {
+                                    anim.Play(mClips[(int)AnimState.charge]);
+                                }
+                            }
                         }
                     }
                     else {
@@ -316,14 +351,17 @@ public class Weapon : MonoBehaviour {
                 mFireCancel = false;
             }
             else {
-                anim.Play(mClips[(int)AnimState.attack]);
+                if(anim) {
+                    anim.Play(mClips[(int)AnimState.attack]);
+                }
 
                 //spawn charged projectile
                 CreateProjectile(mCurChargeLevel, null);
             }
 
             //reset charge
-            charges[mCurChargeLevel].Enable(false);
+            if(charges.Length > 0)
+                charges[mCurChargeLevel].Enable(false);
 
             mCurChargeLevel = 0;
         }

@@ -38,7 +38,7 @@ public class Stats : MonoBehaviour {
             }
         }
     }
-
+        
     public bool isInvul { get { return mIsInvul; } set { mIsInvul = value; } }
 
     /// <summary>
@@ -51,6 +51,15 @@ public class Stats : MonoBehaviour {
     /// </summary>
     public Vector3 lastDamageNormal { get { return mLastDamageNorm; } }
 
+    public DamageReduceData GetDamageReduceData(Damage.Type type) {
+        for(int i = 0, max = damageTypeReduction.Length; i < max; i++) {
+            if(damageTypeReduction[i].type == type) {
+                return damageTypeReduction[i];
+            }
+        }
+        return null;
+    }
+
     public void ApplyDamage(Damage damage, Vector3 hitPos, Vector3 hitNorm) {
         mLastDamagePos = hitPos;
         mLastDamageNorm = hitNorm;
@@ -62,13 +71,9 @@ public class Stats : MonoBehaviour {
                 amt -= amt * damageReduction;
             }
 
-            for(int i = 0, max = damageTypeReduction.Length; i < max; i++) {
-                DamageReduceData dat = damageTypeReduction[i];
-                if(dat.type == damage.type) {
-                    amt -= amt * dat.reduction;
-                    break;
-                }
-            }
+            DamageReduceData damageReduceByType = GetDamageReduceData(damage.type);
+            if(damageReduceByType != null)
+                amt -= amt * damageReduceByType.reduction;
 
             if(amt > 0.0f)
                 curHP -= amt;

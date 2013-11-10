@@ -28,28 +28,59 @@ public class PlatformerSpriteController : MonoBehaviour {
     public string slideClip = "slide";
     public string climbClip = "climb";
 
+    public float minSpeed = 0.5f;//used if useVelocitySpeed=true 
+    public float framePerMeter = 0.1f; //used if useVelocitySpeed=true 
+
     public ParticleSystem wallStickParticle;
 
     public event Callback flipCallback;
-    public event CallbackClip oneTimeClipFinishCallback;
+    public event CallbackClip overrideClipFinishCallback;
 
     //TODO: queue system
 
-    private tk2dSpriteAnimationClip mIdle;
-    private tk2dSpriteAnimationClip mMove;
-    private tk2dSpriteAnimationClip[] mUps;
-    private tk2dSpriteAnimationClip[] mDowns;
-    private tk2dSpriteAnimationClip mWallStick;
-    private tk2dSpriteAnimationClip mWallJump;
+    private class ClipData {
+        public tk2dSpriteAnimationClip idle;
+        public tk2dSpriteAnimationClip move;
+        public tk2dSpriteAnimationClip[] ups;
+        public tk2dSpriteAnimationClip[] downs;
+        public tk2dSpriteAnimationClip wallStick;
+        public tk2dSpriteAnimationClip wallJump;
 
-    private tk2dSpriteAnimationClip mSlide;
-    private tk2dSpriteAnimationClip mClimb;
+        public tk2dSpriteAnimationClip slide;
+        public tk2dSpriteAnimationClip climb;
+
+        public ClipData(PlatformerSpriteController ctrl, tk2dSpriteAnimation lib) {
+            idle = lib.GetClipByName(ctrl.idleClip);
+
+            move = lib.GetClipByName(ctrl.moveClip);
+
+            ups = new tk2dSpriteAnimationClip[ctrl.upClips.Length];
+            for(int i = 0, len = ctrl.upClips.Length; i < len; i++)
+                ups[i] = lib.GetClipByName(ctrl.upClips[i]);
+
+            downs = new tk2dSpriteAnimationClip[ctrl.downClips.Length];
+            for(int i = 0, len = ctrl.downClips.Length; i < len; i++)
+                downs[i] = lib.GetClipByName(ctrl.downClips[i]);
+
+            wallStick = lib.GetClipByName(ctrl.wallStickClip);
+            wallJump = lib.GetClipByName(ctrl.wallJumpClip);
+
+            slide = lib.GetClipByName(ctrl.slideClip);
+            climb = lib.GetClipByName(ctrl.climbClip);
+        }
+    }
 
     private bool mIsLeft;
     private tk2dSpriteAnimationClip mOverrideClip;
     private State mState;
+
     private tk2dSpriteAnimation mDefaultAnimLib;
+    private ClipData mDefaultClipDat;
+
+    private ClipData[] mLibClips;
+
     private int mAnimLibIndex = -1; //-1 is default
+    private bool mAnimVelocitySpeedEnabled;
 
     public bool isLeft { get { return mIsLeft; } }
 
@@ -63,24 +94,64 @@ public class PlatformerSpriteController : MonoBehaviour {
     }
 
     /// <summary>
+    /// Set to true to make framerate based on velocity
+    /// </summary>
+    public bool useVelocitySpeed {
+        get { return mAnimVelocitySpeedEnabled; }
+        set {
+            if(mAnimVelocitySpeedEnabled != value) {
+                mAnimVelocitySpeedEnabled = value;
+
+                if(!mAnimVelocitySpeedEnabled)
+                    anim.ClipFps = 0.0f;
+            }
+        }
+    }
+
+    /// <summary>
     /// Swap the animation library, set to -1 to revert to default
     /// </summary>
     public int animLibIndex {
         get { return mAnimLibIndex; }
         set {
             if(mAnimLibIndex != value) {
+                tk2dSpriteAnimationClip lastClip = anim.CurrentClip;
+                
+                anim.Stop();
+
+                tk2dSpriteAnimation newLib = value >= 0 && value < animLibs.Length ? animLibs[value] : mDefaultAnimLib;
+
+                anim.Library = newLib;
                 mAnimLibIndex = value;
-                if(mAnimLibIndex >= 0 && mAnimLibIndex < animLibs.Length) {
-                    anim.Library = animLibs[mAnimLibIndex];
-                }
-                else {
-                    anim.Library = mDefaultAnimLib;
+
+                if(lastClip != null) {
+                    float lastFrame = lastClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.Single ? 0.0f : (float)anim.CurrentFrame;
+
+                    tk2dSpriteAnimationClip newClip = newLib.GetClipByName(lastClip.name);
+                    if(newClip != null) {
+                        anim.Play(newClip, lastFrame / lastClip.fps, lastClip.fps);
+                    }
+
+                    if(mOverrideClip != null) {
+                        if(newClip != null && mOverrideClip.name == newClip.name) {
+                            mOverrideClip = newClip;
+                        }
+                        else {
+                            if(mOverrideClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.Once && overrideClipFinishCallback != null) {
+                                overrideClipFinishCallback(this, mOverrideClip);
+                            }
+
+                            mOverrideClip = null;
+                        }
+                    }
                 }
             }
         }
     }
 
     public void ResetAnimation() {
+        mAnimVelocitySpeedEnabled = false;
+        anim.ClipFps = 0.0f;
         mOverrideClip = null;
         mIsLeft = false;
         if(anim && anim.Sprite)
@@ -103,6 +174,10 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     public void StopOverrideClip() {
         if(mOverrideClip != null) {
+            /*if(mOverrideClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.Once && overrideClipFinishCallback != null) {
+                overrideClipFinishCallback(this, mOverrideClip);
+            }*/
+
             anim.Stop();
             mOverrideClip = null;
         }
@@ -110,34 +185,22 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     void OnDestroy() {
         flipCallback = null;
-        oneTimeClipFinishCallback = null;
+        overrideClipFinishCallback = null;
     }
 
     void Awake() {
         if(anim == null)
             anim = GetComponent<tk2dSpriteAnimator>();
 
-        mDefaultAnimLib = anim.Library;
-
         anim.AnimationCompleted += OnAnimationComplete;
 
-        mIdle = anim.GetClipByName(idleClip);
-
-        mMove = anim.GetClipByName(moveClip);
-
-        mUps = new tk2dSpriteAnimationClip[upClips.Length];
-        for(int i = 0, len = upClips.Length; i < len; i++)
-            mUps[i] = anim.GetClipByName(upClips[i]);
-
-        mDowns = new tk2dSpriteAnimationClip[downClips.Length];
-        for(int i = 0, len = downClips.Length; i < len; i++)
-            mDowns[i] = anim.GetClipByName(downClips[i]);
-
-        mWallStick = anim.GetClipByName(wallStickClip);
-        mWallJump = anim.GetClipByName(wallJumpClip);
-
-        mSlide = anim.GetClipByName(slideClip);
-        mClimb = anim.GetClipByName(climbClip);
+        mDefaultAnimLib = anim.Library;
+        mDefaultClipDat = new ClipData(this, mDefaultAnimLib);
+                
+        mLibClips = new ClipData[animLibs.Length];
+        for(int i = 0, max = animLibs.Length; i < max; i++) {
+            mLibClips[i] = new ClipData(this, animLibs[i]);
+        }
 
         if(controller == null)
             controller = GetComponent<PlatformerController>();
@@ -154,15 +217,22 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
+        if(mAnimVelocitySpeedEnabled) {
+            float spd = controller.rigidbody.velocity.magnitude;
+            anim.ClipFps = spd > minSpeed ? spd * framePerMeter : 0.0f;
+        }
+
         if(mOverrideClip != null)
             return;
 
         bool left = mIsLeft;
 
+        ClipData dat = mAnimLibIndex == -1 ? mDefaultClipDat : mLibClips[mAnimLibIndex];
+
         switch(mState) {
             case State.None:
                 if(controller.isJumpWall) {
-                    anim.Play(mWallJump);
+                    anim.Play(dat.wallJump);
 
                     left = controller.localVelocity.x < 0.0f;
                 }
@@ -175,14 +245,14 @@ public class PlatformerSpriteController : MonoBehaviour {
                         wallStickParticle.loop = true;
                     }
 
-                    anim.Play(mWallStick);
+                    anim.Play(dat.wallStick);
 
                     left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
 
                 }
                 else if(controller.isOnLadder) {
                     //TODO
-                    anim.Play(mClimb);
+                    anim.Play(dat.climb);
                 }
                 else {
                     if(wallStickParticle)
@@ -190,20 +260,20 @@ public class PlatformerSpriteController : MonoBehaviour {
 
                     if(controller.isGrounded) {
                         if(controller.moveSide != 0.0f) {
-                            anim.Play(mMove);
+                            anim.Play(dat.move);
                         }
                         else {
-                            anim.Play(mIdle);
+                            anim.Play(dat.idle);
                         }
                     }
                     else {
                         tk2dSpriteAnimationClip clip;
 
                         if(controller.localVelocity.y <= 0.0f) {
-                            clip = GetMidAirClip(mDowns);
+                            clip = GetMidAirClip(dat.downs);
                         }
                         else {
-                            clip = GetMidAirClip(mUps);
+                            clip = GetMidAirClip(dat.ups);
                         }
 
                         if(clip != null)
@@ -217,7 +287,7 @@ public class PlatformerSpriteController : MonoBehaviour {
                 break;
 
             case State.Slide:
-                anim.Play(mSlide);
+                anim.Play(dat.slide);
 
                 if(controller.moveSide != 0.0f) {
                     left = controller.moveSide < 0.0f;
@@ -239,8 +309,8 @@ public class PlatformerSpriteController : MonoBehaviour {
         if(_clip == mOverrideClip) {
             mOverrideClip = null;
 
-            if(oneTimeClipFinishCallback != null) {
-                oneTimeClipFinishCallback(this, _clip);
+            if(overrideClipFinishCallback != null) {
+                overrideClipFinishCallback(this, _clip);
             }
         }
     }

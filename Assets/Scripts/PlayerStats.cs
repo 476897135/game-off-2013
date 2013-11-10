@@ -23,9 +23,7 @@ public class PlayerStats : Stats {
     public const int stateArmor = 5;
 
     public const string lifeCountKey = "playerLife";
-
-    public const string weaponFlagsKey = "playerWeapons";
-
+        
     public const string itemFlagsKey = "playerItems"; //for sub tanks, armor, etc.
         
     public event ChangeCallback changeMaxHPCallback;
@@ -77,11 +75,8 @@ public class PlayerStats : Stats {
             return SceneState.instance.CheckGlobalFlag(itemFlagsKey, stateSubTankWeapon2);
         }
     }
-        
-    public static bool IsWeaponAvailable(int index) {
-        return SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
-    }
-
+       
+    
     public static void AddHPMod(int bit) {
         SceneState.instance.SetGlobalFlag(hpModFlagsKey, bit, true, true);
     }

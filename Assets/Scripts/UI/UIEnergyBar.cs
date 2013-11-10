@@ -97,6 +97,15 @@ public class UIEnergyBar : MonoBehaviour {
         bar.color = clr;
     }
 
+    public void RefreshBars() {
+        if(mCurNumBar <= 0)
+            bar.gameObject.SetActive(false);
+        else {
+            bar.gameObject.SetActive(true);
+            bar.height = mCurNumBar * barHeight;
+        }
+    }
+
     void OnDisable() {
         mCurT = (float)mCurNumBar;
         mIsAnimate = false;
@@ -118,16 +127,7 @@ public class UIEnergyBar : MonoBehaviour {
             panelTop.transform.localPosition = topPos;
         }
     }
-
-    void RefreshBars() {
-        if(mCurNumBar == 0)
-            bar.gameObject.SetActive(false);
-        else {
-            bar.gameObject.SetActive(true);
-            bar.height = mCurNumBar*barHeight;
-        }
-    }
-
+        
     void Update() {
         if(mIsAnimate) {
             float dt = Time.realtimeSinceStartup - mLastAnimTime;

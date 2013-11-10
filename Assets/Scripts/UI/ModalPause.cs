@@ -52,6 +52,9 @@ public class ModalPause : UIController {
         }
         else {
             for(int i = 0, max = mWeapons.Length; i < max; i++) {
+                mWeapons[i].current = 0;
+                mWeapons[i].RefreshBars();
+
                 UIEventListener eventListener = mWeapons[i].GetComponent<UIEventListener>();
                 eventListener.onClick = null;
                 eventListener.onSelect = null;
@@ -86,6 +89,8 @@ public class ModalPause : UIController {
 
         for(int i = 0, max = mWeapons.Length; i < max; i++) {
             UIEnergyBar wpnUI = mWeapons[i];
+            wpnUI.current = 0;
+            wpnUI.RefreshBars();
             wpnUI.animateEndCallback += OnEnergyAnimStop;
         }
 
@@ -168,13 +173,13 @@ public class ModalPause : UIController {
 
             UIEventListener eventListener = wpnUI.GetComponent<UIEventListener>();
 
-            if(PlayerStats.IsWeaponAvailable(i) && wpn) {
+            if(Weapon.IsAvailable(i) && wpn) {
                 wpnUI.gameObject.SetActive(true);
                 wpnUI.label.text = wpn.labelText;
                 wpnUI.SetIconSprite(wpn.iconSpriteRef);
 
                 wpnUI.max = Mathf.CeilToInt(Weapon.weaponEnergyDefaultMax);
-                wpnUI.current = Mathf.CeilToInt(wpn.currentEnergy);
+                wpnUI.current = wpn.energyType == Weapon.EnergyType.Unlimited ? wpnUI.max : Mathf.CeilToInt(wpn.currentEnergy);
 
                 eventListener.onClick = OnWeaponClick;
                 eventListener.onSelect = OnWeaponSelect;

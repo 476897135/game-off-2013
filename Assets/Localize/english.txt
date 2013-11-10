@@ -7,5 +7,9 @@
 	{
 		"key":"stargazer",
 		"text":"STAR GAZER"
-	}
+	},
+	{
+		"key":"hoolahoop",
+		"text":"HULA HOOP"
+	},
 ]
