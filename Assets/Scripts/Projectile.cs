@@ -23,8 +23,7 @@ public class Projectile : EntityBase {
         ReflectDirXOnly
     }
 
-    public bool simple; //don't use rigidbody, in fact, don't add it to the go if this is true
-    public float simpleRadius;
+    public bool simple; //don't use rigidbody, make sure you have a sphere collider and set it to trigger
     public LayerMask simpleLayerMask;
 
     public string[] hitTags;
@@ -34,7 +33,8 @@ public class Projectile : EntityBase {
 
     public float force;
 
-    public float speedLimit;
+    [SerializeField]
+    float speedLimit;
 
     public float seekStartDelay = 0.0f;
     public float seekVelocity;
@@ -49,6 +49,7 @@ public class Projectile : EntityBase {
 
     public LayerMask explodeMask;
     public float explodeForce;
+    public Vector3 explodeOfs;
     public float explodeRadius;
 
     public ContactType contactType = ContactType.End;
@@ -74,6 +75,12 @@ public class Projectile : EntityBase {
     protected Vector3 mCurVelocity; //only use by simple
 
     private Damage mDamage;
+    private float mDefaultSpeedLimit;
+    private SphereCollider mSphereColl;
+
+    private float mMoveScale = 1.0f;
+
+    private Stats mStats;
 
     //private Vector2 mOscillateDir;
     //private bool mOscillateSwitch;
@@ -108,14 +115,55 @@ public class Projectile : EntityBase {
 
     public bool spawning { get { return mSpawning; } }
 
+    public Vector3 velocity {
+        get {
+            if(simple)
+                return mCurVelocity;
+            return rigidbody != null ? rigidbody.velocity : Vector3.zero;
+        }
+
+        set {
+            if(simple)
+                mCurVelocity = value;
+            else if(rigidbody)
+                rigidbody.velocity = value;
+        }
+    }
+
+    public Vector3 activeForce {
+        get { return mActiveForce; }
+        set { mActiveForce = value; }
+    }
+
+    public float moveScale {
+        get { return mMoveScale; }
+        set { mMoveScale = value; }
+    }
+
+    public Stats stats { get { return mStats; } }
+
+    public void SetSpeedLimit(float limit) {
+        speedLimit = limit;
+    }
+
+    public void RevertSpeedLimit() {
+        speedLimit = mDefaultSpeedLimit;
+    }
+
     protected override void OnDespawned() {
         CancelInvoke();
+        RevertSpeedLimit();
+        mMoveScale = 1.0f;
 
         base.OnDespawned();
     }
 
     protected override void Awake() {
         base.Awake();
+
+        mSphereColl = collider ? collider as SphereCollider : null;
+
+        mDefaultSpeedLimit = speedLimit;
 
         if(rigidbody != null) {
             rigidbody.detectCollisions = false;
@@ -125,6 +173,12 @@ public class Projectile : EntityBase {
             collider.enabled = false;
 
         mDamage = GetComponent<Damage>();
+
+        mStats = GetComponent<Stats>();
+        if(mStats) {
+            mStats.changeHPCallback += OnHPChange;
+            mStats.isInvul = true;
+        }
 
         if(!FSM)
             autoSpawnFinish = true;
@@ -145,7 +199,7 @@ public class Projectile : EntityBase {
     }
 
     public override void SpawnFinish() {
-        Debug.Log("start dir: " + mStartDir);
+        //Debug.Log("start dir: " + mStartDir);
 
         mSpawning = false;
 
@@ -209,33 +263,34 @@ public class Projectile : EntityBase {
         switch((State)state) {
             case State.Seek:
             case State.Active:
-                if(!simple) {
-                    if(collider)
-                        collider.enabled = true;
+                if(collider)
+                    collider.enabled = true;
 
-                    if(rigidbody)
-                        rigidbody.detectCollisions = true;
-                }
+                if(rigidbody)
+                    rigidbody.detectCollisions = true;
+
+                if(mStats)
+                    mStats.isInvul = false;
                 break;
 
             case State.Dying:
                 CancelInvoke();
 
-                if(simple)
-                    mCurVelocity = Vector3.zero;
-                else {
-                    if(collider)
-                        collider.enabled = false;
+                mCurVelocity = Vector3.zero;
 
-                    if(rigidbody) {
-                        rigidbody.detectCollisions = false;
-                        rigidbody.velocity = Vector3.zero;
-                        rigidbody.angularVelocity = Vector3.zero;
-                    }
+                if(collider)
+                    collider.enabled = false;
+
+                if(rigidbody) {
+                    rigidbody.detectCollisions = false;
+                    rigidbody.velocity = Vector3.zero;
+                    rigidbody.angularVelocity = Vector3.zero;
                 }
 
                 if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
-                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, transform.position, Quaternion.identity);
+                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null,
+                        explodeOnDeath ? transform.localToWorldMatrix.MultiplyPoint(explodeOfs) : transform.position,
+                        Quaternion.identity);
                 }
 
                 if(explodeOnDeath && explodeRadius > 0.0f) {
@@ -251,17 +306,19 @@ public class Projectile : EntityBase {
                 break;
 
             case State.Invalid:
-                if(simple)
-                    mCurVelocity = Vector3.zero;
-                else {
-                    if(collider)
-                        collider.enabled = false;
+                mCurVelocity = Vector3.zero;
+                if(collider)
+                    collider.enabled = false;
 
-                    if(rigidbody) {
-                        rigidbody.detectCollisions = false;
-                        rigidbody.velocity = Vector3.zero;
-                        rigidbody.angularVelocity = Vector3.zero;
-                    }
+                if(rigidbody) {
+                    rigidbody.detectCollisions = false;
+                    rigidbody.velocity = Vector3.zero;
+                    rigidbody.angularVelocity = Vector3.zero;
+                }
+
+                if(mStats) {
+                    mStats.Reset();
+                    mStats.isInvul = true;
                 }
                 break;
         }
@@ -277,6 +334,13 @@ public class Projectile : EntityBase {
         }
 
         return false;
+    }
+
+    protected virtual void OnHPChange(Stats stat, float delta) {
+        if(stat.curHP == 0) {
+            if(state == (int)State.Active || state == (int)State.Seek)
+                state = (int)State.Dying;
+        }
     }
 
     protected virtual void ApplyContact(GameObject go, Vector3 pos, Vector3 normal) {
@@ -374,8 +438,16 @@ public class Projectile : EntityBase {
     }
 
     void DoSimple() {
-        Vector3 curPos = transform.position;
-        Vector3 delta = mCurVelocity * Time.fixedDeltaTime;
+        Vector3 curV = mCurVelocity * mMoveScale;
+
+        if(speedLimit > 0) {
+            float spdSqr = curV.sqrMagnitude;
+            if(spdSqr > speedLimit * speedLimit) {
+                curV = (curV / Mathf.Sqrt(spdSqr)) * speedLimit;
+            }
+        }
+
+        Vector3 delta = curV * Time.fixedDeltaTime;
         float d = delta.magnitude;
 
         if(d > 0.0f) {
@@ -383,15 +455,15 @@ public class Projectile : EntityBase {
 
             //check if hit something
             RaycastHit hit;
-            if(Physics.SphereCast(curPos, simpleRadius, dir, out hit, d, simpleLayerMask)) {
-                transform.position = hit.point + hit.normal * simpleRadius;
+            if(Physics.SphereCast(mSphereColl.bounds.center, mSphereColl.radius, dir, out hit, d, simpleLayerMask)) {
+                transform.position = hit.point + hit.normal * mSphereColl.radius;
                 ApplyContact(hit.collider.gameObject, hit.point, hit.normal);
             }
         }
 
         //make sure we are still active
         if((State)state == State.Active)
-            transform.position = curPos + delta;
+            transform.position = transform.position + delta;
     }
 
     void FixedUpdate() {
@@ -409,7 +481,7 @@ public class Projectile : EntityBase {
                             }
                         }
 
-                        rigidbody.AddForce(mActiveForce);
+                        rigidbody.AddForce(mActiveForce * mMoveScale);
                     }
                 }
                 break;
@@ -431,7 +503,7 @@ public class Projectile : EntityBase {
                                 _dir = M8.MathUtil.DirCap(rigidbody.velocity.normalized, _dir, seekAngleCap);
                             }
 
-                            mCurVelocity = M8.MathUtil.Steer(rigidbody.velocity, _dir * seekVelocity, seekVelocityCap, 1.0f);
+                            mCurVelocity = M8.MathUtil.Steer(rigidbody.velocity, _dir * seekVelocity, seekVelocityCap, mMoveScale);
                         }
                     }
 
@@ -463,19 +535,14 @@ public class Projectile : EntityBase {
     }
 
     void OnDrawGizmos() {
-        if(simple && simpleRadius > 0.0f) {
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(transform.position, simpleRadius);
-        }
-
         if(explodeRadius > 0.0f) {
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, explodeRadius);
+            Gizmos.DrawWireSphere(transform.localToWorldMatrix.MultiplyPoint(explodeOfs), explodeRadius);
         }
     }
 
     private void DoExplode() {
-        Vector3 pos = transform.position;
+        Vector3 pos = transform.localToWorldMatrix.MultiplyPoint(explodeOfs);
         //float explodeRadiusSqr = explodeRadius * explodeRadius;
 
         //TODO: spawn fx

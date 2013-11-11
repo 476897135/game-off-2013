@@ -10,7 +10,7 @@ public class Damage : MonoBehaviour {
         Fire,
         Lightning,
         Explosion,
-        Wind,
+        Shadow,
 
         NumType
     }

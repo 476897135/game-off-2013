@@ -10,12 +10,13 @@ public class WeaponStarGazer : Weapon {
     private Projectile mLastLargeStar;
 
     protected override void OnDisable() {
-        if(mLastLargeStar) {
+        /*if(mLastLargeStar) {
             if(!mLastLargeStar.isReleased)
                 mLastLargeStar.Release();
 
             mLastLargeStar = null;
         }
+        mLastLargeStar = null;*/
 
         base.OnDisable();
     }

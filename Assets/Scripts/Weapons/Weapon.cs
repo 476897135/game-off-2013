@@ -71,7 +71,7 @@ public class Weapon : MonoBehaviour {
     public tk2dSpriteAnimator anim;
     public GameObject activeGO;
 
-    public string projGroup = "proj";
+    public string projGroup = "projPlayer";
     public int projMax = 4;
 
     public bool stopOnHurt = false;
@@ -90,7 +90,7 @@ public class Weapon : MonoBehaviour {
     protected bool mFireActive = false;
     private int mCurChargeLevel = 0;
     protected int mCurProjCount = 0;
-    private bool mStarted = false;
+    protected bool mStarted = false;
     protected bool mFireCancel = false;
 
     private float mCurTime;
@@ -144,7 +144,7 @@ public class Weapon : MonoBehaviour {
         get { return mFireActive; }
     }
 
-    public Vector3 spawnPoint {
+    public virtual Vector3 spawnPoint {
         get {
             Vector3 pt = _spawnPoint ? _spawnPoint.position : transform.position;
             pt.z = 0.0f;
@@ -152,7 +152,7 @@ public class Weapon : MonoBehaviour {
         }
     }
 
-    public Vector3 dir {
+    public virtual Vector3 dir {
         get {
             if(_spawnPoint) {
                 Vector3 r = _spawnPoint.right;

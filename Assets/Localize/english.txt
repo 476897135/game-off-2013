@@ -14,6 +14,14 @@
 	},
 	{
 		"key":"cannon",
-		"text":"CONFLICT"
+		"text":"COMMIT"
+	},
+	{
+		"key":"cloner",
+		"text":"CLONE"
+	},
+	{
+		"key":"hipster",
+		"text":"HIPSTER"
 	},
 ]
