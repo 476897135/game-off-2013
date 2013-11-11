@@ -24,4 +24,12 @@
 		"key":"hipster",
 		"text":"HIPSTER"
 	},
+	{
+		"key":"lightning",
+		"text":"L. FORK"
+	},
+	{
+		"key":"whip",
+		"text":"PULL WHIP"
+	},
 ]

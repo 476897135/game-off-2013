@@ -295,7 +295,11 @@ public class Weapon : MonoBehaviour {
     IEnumerator DoFire() {
         if(anim) {
             anim.Stop();
-            anim.Play(mClips[(int)AnimState.attack]);
+
+            if(mClips[(int)AnimState.attack] != null)
+                anim.Play(mClips[(int)AnimState.attack]);
+            else
+                anim.Play(mClips[(int)AnimState.normal]);
         }
 
         mCurChargeLevel = 0;
@@ -330,7 +334,7 @@ public class Weapon : MonoBehaviour {
 
                             //beginning first charge
                             if(mCurChargeLevel == 1) {
-                                if(anim) {
+                                if(anim && mClips[(int)AnimState.charge] != null) {
                                     anim.Play(mClips[(int)AnimState.charge]);
                                 }
                             }
@@ -354,7 +358,10 @@ public class Weapon : MonoBehaviour {
             }
             else {
                 if(anim) {
-                    anim.Play(mClips[(int)AnimState.attack]);
+                    if(mClips[(int)AnimState.attack] != null)
+                        anim.Play(mClips[(int)AnimState.attack]);
+                    else
+                        anim.Play(mClips[(int)AnimState.normal]);
                 }
 
                 //spawn charged projectile
