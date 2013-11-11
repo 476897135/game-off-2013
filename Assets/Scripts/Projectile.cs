@@ -153,7 +153,6 @@ public class Projectile : EntityBase {
     protected override void OnDespawned() {
         CancelInvoke();
         RevertSpeedLimit();
-        mMoveScale = 1.0f;
 
         base.OnDespawned();
     }
