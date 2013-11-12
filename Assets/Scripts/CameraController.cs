@@ -44,6 +44,8 @@ public class CameraController : MonoBehaviour {
         }
     }
 
+    public tk2dCamera tk2dCam { get { return mCam; } }
+
     public void SetTransition(bool transition) {
         mDoTrans = transition;
         mLastTransTime = Time.time;

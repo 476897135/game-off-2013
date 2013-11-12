@@ -132,6 +132,10 @@ public class Weapon : MonoBehaviour {
         }
     }
 
+    public int currentChargeLevel {
+        get { return mCurChargeLevel; }
+    }
+
     public bool isMaxEnergy {
         get { return energyType == EnergyType.Unlimited || mCurEnergy >= weaponEnergyDefaultMax; }
     }
@@ -238,6 +242,9 @@ public class Weapon : MonoBehaviour {
 
             if(activeGO)
                 activeGO.SetActive(true);
+
+            if(charges.Length > 0)
+                charges[mCurChargeLevel].Enable(true);
         }
     }
 
@@ -248,7 +255,7 @@ public class Weapon : MonoBehaviour {
         if(activeGO)
             activeGO.SetActive(false);
 
-        if(mCurChargeLevel > 0 && charges.Length > 0) {
+        if(charges.Length > 0) {
             charges[mCurChargeLevel].Enable(false);
         }
 
@@ -321,12 +328,12 @@ public class Weapon : MonoBehaviour {
                 int nextLevel = mCurChargeLevel + 1;
                 if(nextLevel < charges.Length) {
                     //check if we can fire this charge
-                    if(currentEnergy >= charges[nextLevel].energyCost) {
+                    if(energyType == EnergyType.Unlimited || currentEnergy >= charges[nextLevel].energyCost) {
                         mCurTime += Time.fixedDeltaTime;
                         if(mCurTime >= charges[nextLevel].delay) {
                             //hide previous charge gameobject and activate/set new one
-                            if(mCurChargeLevel > 0)
-                                charges[mCurChargeLevel].Enable(false);
+                            charges[mCurChargeLevel].Enable(false);
+                                
 
                             charges[nextLevel].Enable(true);
 
@@ -340,11 +347,11 @@ public class Weapon : MonoBehaviour {
                             }
                         }
                     }
-                    else {
+                    //else {
                         //if we are only in level 0, then just stop
-                        if(mCurChargeLevel == 0)
-                            break;
-                    }
+                        //if(mCurChargeLevel == 0)
+                            //break;
+                    //}
                 }
 
                 yield return wait;
@@ -369,10 +376,13 @@ public class Weapon : MonoBehaviour {
             }
 
             //reset charge
-            if(charges.Length > 0)
+            if(charges.Length > 0) {
                 charges[mCurChargeLevel].Enable(false);
 
-            mCurChargeLevel = 0;
+                mCurChargeLevel = 0;
+
+                charges[mCurChargeLevel].Enable(true);
+            }
         }
     }
 
