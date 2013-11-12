@@ -85,7 +85,7 @@ public class Weapon : MonoBehaviour {
     [SerializeField]
     Transform _spawnPoint;
 
-    private tk2dSpriteAnimationClip[] mClips;
+    protected tk2dSpriteAnimationClip[] mClips;
 
     protected bool mFireActive = false;
     private int mCurChargeLevel = 0;
@@ -264,7 +264,7 @@ public class Weapon : MonoBehaviour {
         mFireCancel = false;
     }
 
-    void OnDestroy() {
+    protected virtual void OnDestroy() {
         if(anim)
             anim.AnimationCompleted -= OnAnimationClipEnd;
 

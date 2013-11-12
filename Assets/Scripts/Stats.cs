@@ -60,7 +60,7 @@ public class Stats : MonoBehaviour {
         return null;
     }
 
-    public void ApplyDamage(Damage damage, Vector3 hitPos, Vector3 hitNorm) {
+    public bool ApplyDamage(Damage damage, Vector3 hitPos, Vector3 hitNorm) {
         mLastDamagePos = hitPos;
         mLastDamageNorm = hitNorm;
 
@@ -75,9 +75,13 @@ public class Stats : MonoBehaviour {
             if(damageReduceByType != null)
                 amt -= amt * damageReduceByType.reduction;
 
-            if(amt > 0.0f)
+            if(amt > 0.0f) {
                 curHP -= amt;
+                return true;
+            }
         }
+
+        return false;
     }
 
     public virtual void Reset() {

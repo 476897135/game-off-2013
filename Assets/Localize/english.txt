@@ -14,7 +14,7 @@
 	},
 	{
 		"key":"cannon",
-		"text":"COMMIT"
+		"text":"RESOLVER"
 	},
 	{
 		"key":"cloner",

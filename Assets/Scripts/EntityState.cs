@@ -4,5 +4,6 @@ public enum EntityState {
     Normal,
     Hurt,
     Dead,
+    Stun,
     RespawnWait
 }

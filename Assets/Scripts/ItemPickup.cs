@@ -19,9 +19,11 @@ public class ItemPickup : EntityBase {
 
     private SpriteColorBlink[] mBlinkers;
 
-    void OnTriggerEnter(Collider col) {
-        Player player = col.GetComponent<Player>();
-        if(player && player.state != (int)EntityState.Dead && player.state != (int)EntityState.Invalid) {
+    /// <summary>
+    /// Force pickup
+    /// </summary>
+    public void PickUp(Player player) {
+        if(player && player.state != (int)EntityState.Dead && player.state != (int)EntityState.Invalid && gameObject.activeInHierarchy) {
             switch(type) {
                 case ItemType.Health:
                     if(player.stats.curHP < player.stats.maxHP)
@@ -98,6 +100,11 @@ public class ItemPickup : EntityBase {
         }
     }
 
+    void OnTriggerEnter(Collider col) {
+        Player player = col.GetComponent<Player>();
+        PickUp(player);
+    }
+
     protected override void ActivatorSleep() {
         base.ActivatorSleep();
 
@@ -121,6 +128,12 @@ public class ItemPickup : EntityBase {
         CancelInvoke();
 
         base.OnDespawned();
+    }
+
+    protected override void OnSpawned() {
+        activator.deactivateOnStart = false;
+
+        base.OnSpawned();
     }
 
     protected override void OnDestroy() {

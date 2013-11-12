@@ -22,8 +22,7 @@ public class Damage : MonoBehaviour {
         //target.SendMessage(DamageMessage, this, SendMessageOptions.DontRequireReceiver);
         Stats stat = target.GetComponent<Stats>();
         if(stat) {
-            stat.ApplyDamage(this, hitPos, hitNorm);
-            return true;
+            return stat.ApplyDamage(this, hitPos, hitNorm);
         }
 
         return false;

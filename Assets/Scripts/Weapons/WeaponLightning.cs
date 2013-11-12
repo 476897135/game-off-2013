@@ -15,22 +15,19 @@ public class WeaponLightning : Weapon {
 
     private Damage mDmg;
     private float mDefaultDmgAmt;
+    private Collider[] mStruckCols;
     private int mStrikeActives;
 
-    public override bool canFire {
-        get {
-            return mStrikeActives == 0 && (energyType == EnergyType.Unlimited || (currentEnergy > 0.0f && (charges.Length == 0 || currentEnergy >= charges[currentChargeLevel].energyCost)));
-        }
-    }
-
     protected override Projectile CreateProjectile(int chargeInd, Transform seek) {
-        PerformStrike(null, spawnPoint, chargeInd);
-        if(mStrikeActives > 0) {
-            if(fireActiveAnimDat) {
-                fireActiveAnimDat.Play("fire");
-            }
+        if(mStrikeActives == 0) {
+            PerformStrike(null, spawnPoint, chargeInd);
+            if(mStrikeActives > 0) {
+                if(fireActiveAnimDat) {
+                    fireActiveAnimDat.Play("fire");
+                }
 
-            currentEnergy -= charges[chargeInd].energyCost;
+                currentEnergy -= charges[chargeInd].energyCost;
+            }
         }
         return null;
     }
@@ -57,13 +54,15 @@ public class WeaponLightning : Weapon {
         mDefaultDmgAmt = mDmg.amount;
 
         mStrikes = new GameObject[strikeHolder.childCount];
-        mStrikeTileSprites = new tk2dTiledSprite[strikeHolder.childCount][];
 
+        mStrikeTileSprites = new tk2dTiledSprite[mStrikes.Length][];
         for(int i = 0; i < mStrikes.Length; i++) {
             mStrikes[i] = strikeHolder.GetChild(i).gameObject;
             mStrikeTileSprites[i] = mStrikes[i].GetComponentsInChildren<tk2dTiledSprite>(true);
             mStrikes[i].SetActive(false);
         }
+
+        mStruckCols = new Collider[mStrikes.Length];
     }
 
     void PerformStrike(Collider aCol, Vector3 pos, int chargeInd) {
@@ -81,6 +80,9 @@ public class WeaponLightning : Weapon {
             float nearSqr = Mathf.Infinity;
 
             for(int cI = 0, cMax = cols.Length; cI < cMax; cI++) {
+                if(System.Array.IndexOf(mStruckCols, cols[cI], 0, mStrikeActives) != -1)
+                    continue;
+
                 if(cols[cI] != aCol && cols[cI].gameObject.activeInHierarchy) {
                     Vector3 _p = cols[cI].bounds.center;
                     Vector3 _dir = _p - pos;
@@ -115,7 +117,10 @@ public class WeaponLightning : Weapon {
                     mStrikeTileSprites[mStrikeActives][i].dimensions = dim;
                 }
 
+                mStruckCols[mStrikeActives] = col;
+                                
                 mStrikeActives++;
+
                 if(chargeInd > 0 && mStrikeActives + chargeInd <= mStrikes.Length)
                     PerformStrike(col, p, chargeInd - 1);
             }
@@ -128,13 +133,15 @@ public class WeaponLightning : Weapon {
             for(int i = 0, max = mStrikes.Length; i < max; i++) {
                 if(mStrikes[i].activeInHierarchy)
                     mStrikeActives++;
-                else
-                    mStrikes[mStrikeActives].transform.parent = strikeHolder;
+                else {
+                    mStrikes[i].transform.parent = strikeHolder;
+                    mStruckCols[i] = null;
+                }
             }
         }
     }
 
-    void OnDrawGizmos() {
+    void OnDrawGizmosSelected() {
         if(radius > 0.0f) {
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(spawnPoint, radius);
