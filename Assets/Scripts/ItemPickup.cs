@@ -102,7 +102,8 @@ public class ItemPickup : EntityBase {
 
     void OnTriggerEnter(Collider col) {
         Player player = col.GetComponent<Player>();
-        PickUp(player);
+        if(player)
+            PickUp(player);
     }
 
     protected override void ActivatorSleep() {
@@ -118,7 +119,6 @@ public class ItemPickup : EntityBase {
         if(collider)
             collider.enabled = true;
 
-        mSpawned = false;
         mDropActive = false;
 
         foreach(SpriteColorBlink blinker in mBlinkers) {
@@ -132,6 +132,7 @@ public class ItemPickup : EntityBase {
 
     protected override void OnSpawned() {
         activator.deactivateOnStart = false;
+        mSpawned = true;
 
         base.OnSpawned();
     }
@@ -144,8 +145,6 @@ public class ItemPickup : EntityBase {
 
     public override void SpawnFinish() {
         //start ai, player control, etc
-        mSpawned = true;
-
         StartCoroutine(DoDrop());
         Invoke("Release", destroyDelay);
         Invoke("DoBlinkers", destroyStartBlinkDelay);

@@ -387,7 +387,7 @@ public class Weapon : MonoBehaviour {
     }
 
     //> AnimationCompleted
-    void OnAnimationClipEnd(tk2dSpriteAnimator aAnim, tk2dSpriteAnimationClip aClip) {
+    protected virtual void OnAnimationClipEnd(tk2dSpriteAnimator aAnim, tk2dSpriteAnimationClip aClip) {
         if(aAnim == anim && aClip == mClips[(int)AnimState.attack]) {
             anim.Play(mClips[(int)AnimState.normal]);
         }

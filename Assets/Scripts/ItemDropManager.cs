@@ -53,7 +53,7 @@ public class ItemDropManager : MonoBehaviour {
 
             if(!string.IsNullOrEmpty(spawnType)) {
                 Debug.Log("dropping: " + spawnType);
-                Transform t = mCtrl.Spawn(spawnType, spawnType, null, pos, Quaternion.identity);
+                mCtrl.Spawn(spawnType, spawnType, null, pos, Quaternion.identity);
             }
         }
     }
