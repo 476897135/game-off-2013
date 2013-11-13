@@ -26,7 +26,7 @@ public class PlatformerSpriteController : MonoBehaviour {
     public string wallJumpClip = "wallJump";
 
     public string slideClip = "slide";
-    public string climbClip = "climb";
+    //public string climbClip = "climb";
 
     public float minSpeed = 0.5f;//used if useVelocitySpeed=true 
     public float framePerMeter = 0.1f; //used if useVelocitySpeed=true 
@@ -47,7 +47,7 @@ public class PlatformerSpriteController : MonoBehaviour {
         public tk2dSpriteAnimationClip wallJump;
 
         public tk2dSpriteAnimationClip slide;
-        public tk2dSpriteAnimationClip climb;
+        //public tk2dSpriteAnimationClip climb;
 
         public ClipData(PlatformerSpriteController ctrl, tk2dSpriteAnimation lib) {
             idle = lib.GetClipByName(ctrl.idleClip);
@@ -66,7 +66,7 @@ public class PlatformerSpriteController : MonoBehaviour {
             wallJump = lib.GetClipByName(ctrl.wallJumpClip);
 
             slide = lib.GetClipByName(ctrl.slideClip);
-            climb = lib.GetClipByName(ctrl.climbClip);
+            //climb = lib.GetClipByName(ctrl.climbClip);
         }
     }
 
@@ -249,10 +249,6 @@ public class PlatformerSpriteController : MonoBehaviour {
 
                     left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
 
-                }
-                else if(controller.isOnLadder) {
-                    //TODO
-                    anim.Play(dat.climb);
                 }
                 else {
                     if(wallStickParticle)

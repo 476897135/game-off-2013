@@ -27,9 +27,9 @@ public class WeaponHoolaHoop : Weapon {
             player.controller.moveAirForce = player.controller.moveForce;
             player.controller.standDrag = 0.0f;
 
-            Stats.DamageReduceData dmgReduce = player.stats.GetDamageReduceData(Damage.Type.Contact);
+            Stats.DamageMod dmgReduce = player.stats.GetDamageMod(player.stats.damageTypeReduction, Damage.Type.Contact);
             if(dmgReduce != null)
-                dmgReduce.reduction = 1.0f;
+                dmgReduce.val = 1.0f;
 
             hoolaAnimDat.Play("active");
 
@@ -55,9 +55,9 @@ public class WeaponHoolaHoop : Weapon {
                 player.controller.localVelocity = new Vector3(Mathf.Sign(player.controller.localVelocity.x) * player.controller.moveMaxSpeed, player.controller.localVelocity.y, 0.0f);
             }
 
-            Stats.DamageReduceData dmgReduce = player.stats.GetDamageReduceData(Damage.Type.Contact);
+            Stats.DamageMod dmgReduce = player.stats.GetDamageMod(player.stats.damageTypeReduction, Damage.Type.Contact);
             if(dmgReduce != null)
-                dmgReduce.reduction = 0.0f;
+                dmgReduce.val = 0.0f;
 
             hoolaAnimDat.PlayDefault();
 

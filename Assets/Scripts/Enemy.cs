@@ -2,13 +2,16 @@
 using System.Collections;
 
 public class Enemy : EntityBase {
+    public const float stunDelay = 1.0f;
 
     public bool respawnOnSleep = true; //for regular enemies, this will cause a restart on deactivate
 
     public bool toRespawnAuto = true; //if true, wait for a delay during death to wait for respawn
     public float toRespawnDelay = 0.0f;
 
+    public AnimatorData animator; //if this enemy is controlled by an animator (usu. as parent)
     public GameObject visibleGO; //the game object to deactivate while dead/respawning
+    public GameObject stunGO;
 
     public string deathSpawnGroup; //upon death, spawn this
     public string deathSpawnType;
@@ -21,6 +24,7 @@ public class Enemy : EntityBase {
     private bool mSpawnRigidBodyKinematic;
 
     private GravityController mGravCtrl;
+    private RigidBodyController mBodyCtrl;
 
     public Stats stats { get { return mStats; } }
 
@@ -34,6 +38,9 @@ public class Enemy : EntityBase {
     protected override void OnDespawned() {
         //reset stuff here
         state = (int)EntityState.Invalid;
+
+        if(animator)
+            animator.Stop();
 
         Restart();
 
@@ -49,9 +56,20 @@ public class Enemy : EntityBase {
     }
 
     protected override void StateChanged() {
+        switch((EntityState)prevState) {
+            case EntityState.Stun:
+                if(stunGO)
+                    stunGO.SetActive(false);
+
+                SetPhysicsActive(true, true);
+
+                CancelInvoke("DoStun");
+                break;
+        }
+
         switch((EntityState)state) {
             case EntityState.Dead:
-                SetPhysicsActive(false);
+                SetPhysicsActive(false, false);
 
                 Blink(0.0f);
                 mStats.isInvul = true;
@@ -66,6 +84,15 @@ public class Enemy : EntityBase {
                 if(toRespawnAuto) {
                     StartCoroutine(DoRespawnWaitDelayKey);
                 }
+                break;
+
+            case EntityState.Stun:
+                if(stunGO)
+                    stunGO.SetActive(true);
+
+                SetPhysicsActive(false, true);
+
+                Invoke("DoStun", stunDelay);
                 break;
 
             case EntityState.RespawnWait:
@@ -100,8 +127,9 @@ public class Enemy : EntityBase {
 
             case EntityState.Normal:
             case EntityState.Hurt:
+            case EntityState.Stun:
                 if(respawnOnSleep) {
-                    SetPhysicsActive(false);
+                    SetPhysicsActive(false, false);
 
                     if(visibleGO)
                         visibleGO.SetActive(false);
@@ -115,6 +143,9 @@ public class Enemy : EntityBase {
                     StopCoroutine(DoRespawnWaitDelayKey);
                     ToRespawnWait();
                 }
+                break;
+
+            case EntityState.Invalid:
                 break;
         }
     }
@@ -139,10 +170,14 @@ public class Enemy : EntityBase {
         mStats = GetComponent<Stats>();
         mStats.changeHPCallback += OnStatsHPChange;
 
+        mBodyCtrl = GetComponent<RigidBodyController>();
         mGravCtrl = GetComponent<GravityController>();
 
         if(!FSM)
             autoSpawnFinish = true;
+
+        if(stunGO)
+            stunGO.SetActive(false);
 
         //initialize variables
     }
@@ -154,22 +189,37 @@ public class Enemy : EntityBase {
         //initialize variables from other sources (for communicating with managers, etc.)
     }
 
-    void SetPhysicsActive(bool active) {
+    void SetPhysicsActive(bool aActive, bool excludeCollision) {
         if(rigidbody) {
             if(!mSpawnRigidBodyKinematic) {
-                rigidbody.isKinematic = !active;
+                rigidbody.isKinematic = !aActive;
             }
 
-            rigidbody.detectCollisions = active;
+            if(aActive || !excludeCollision)
+                rigidbody.detectCollisions = aActive;
         }
 
-        if(collider) {
-            collider.enabled = active;
+        if(collider && (aActive || !excludeCollision)) {
+            collider.enabled = aActive;
         }
 
         if(mGravCtrl) {
-            mGravCtrl.enabled = active;
+            mGravCtrl.enabled = aActive;
         }
+
+        if(animator) {
+            if(aActive) {
+                if(animator.isPaused)
+                    animator.Resume();
+            }
+            else {
+                if(animator.isPlaying)
+                    animator.Pause();
+            }
+        }
+
+        if(mBodyCtrl)
+            mBodyCtrl.enabled = aActive;
     }
 
     /// <summary>
@@ -178,7 +228,7 @@ public class Enemy : EntityBase {
     /// </summary>
     protected virtual void Restart() {
         //reset physics
-        SetPhysicsActive(true);
+        SetPhysicsActive(true, false);
 
         if(visibleGO)
             visibleGO.SetActive(true);
@@ -190,6 +240,12 @@ public class Enemy : EntityBase {
 
         if(FSM)
             FSM.Reset();
+
+        if(mBodyCtrl)
+            mBodyCtrl.enabled = true;
+
+        if(stunGO)
+            stunGO.SetActive(false);
 
         StopCoroutine(DoRespawnWaitDelayKey);
     }
@@ -203,6 +259,10 @@ public class Enemy : EntityBase {
         if(stat.curHP <= 0.0f) {
             state = (int)EntityState.Dead;
         }
+        else if(delta < 0.0f) {
+            if(stat.lastDamageSource != null && stat.lastDamageSource.stun)
+                state = (int)EntityState.Stun;
+        }
     }
 
     private const string DoRespawnWaitDelayKey = "DoRespawnWaitDelay";
@@ -215,5 +275,10 @@ public class Enemy : EntityBase {
         }
 
         ToRespawnWait();
+    }
+
+    void DoStun() {
+        if(state == (int)EntityState.Stun)
+            state = (int)EntityState.Normal;
     }
 }

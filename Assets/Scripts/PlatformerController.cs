@@ -24,6 +24,7 @@ public class PlatformerController : RigidBodyController {
     public float jumpWallLockDelay = 0.1f;
 
     public bool jumpDropAllow = true; //if true, player can jump when they are going down
+    public float jumpAirDelay = 0.1f; //allow player to jump if they are off the ground for a short time.
 
     public float airDampForceX; //force to try to reduce the horizontal speed while mid-air
     public float airDampMinSpeedX; //minimum criteria of horizontal speed when dampening
@@ -38,12 +39,6 @@ public class PlatformerController : RigidBodyController {
     public float wallStickForce = 40f; //move towards the wall
     public float wallStickDownSpeedCap = 5.0f; //reduce speed upon sticking to wall if going downward, 'friction'
     public LayerMask wallStickInvalidMask; //layer masks that do not allow wall stick
-
-    public string ladderTag = "Ladder";
-    public LayerMask ladderLayer;
-    public float ladderOrientSpeed = 270.0f;
-    public float ladderDrag = 20.0f;
-    public float ladderJumpForce = 10.0f;
 
     public LayerMask plankLayer;
     public float plankDropDelay; //hold down long enough to drop from plank
@@ -69,11 +64,6 @@ public class PlatformerController : RigidBodyController {
     private bool mJumpingWall = false;
     private bool mJumpInputDown = false;
 
-    private int mLadderCounter;
-    private bool mLadderLastGravity;
-    private Vector3 mLadderUp;
-    private Quaternion mLadderRot;
-
     private bool mEyeLocked = true;
     private Vector3 mEyeOrientVel;
     private bool mLastGround = false;
@@ -96,6 +86,8 @@ public class PlatformerController : RigidBodyController {
 
     private float mMoveYGround;
     private float mMoveYGroundDownLastTime; //last time the down key was pressed
+
+    private float mLastGroundTime; //last time we were on ground
 
     public bool inputEnabled {
         get { return mInputEnabled; }
@@ -121,8 +113,6 @@ public class PlatformerController : RigidBodyController {
             }
         }
     }
-
-    public bool isOnLadder { get { return mLadderCounter > 0; } }
 
     public Transform eye {
         get { return _eye; }
@@ -167,16 +157,8 @@ public class PlatformerController : RigidBodyController {
     public override void ResetCollision() {
         base.ResetCollision();
 
-        if(mLadderCounter > 0) {
-            if(gravityController != null)
-                gravityController.enabled = true;
-            else
-                rigidbody.useGravity = mLadderLastGravity;
-
-            mLadderCounter = 0;
-        }
-
         mLastGround = false;
+        mLastGroundTime = 0.0f;
         mJump = false;
         mJumpingWall = false;
 
@@ -241,7 +223,7 @@ public class PlatformerController : RigidBodyController {
             mJumpInputDown = down;
 
             if(mJumpInputDown) {
-                if(isUnderWater || isOnLadder) {
+                if(isUnderWater) {
                     mJumpingWall = false;
                     mJump = true;
                     mJumpCounter = 0;
@@ -272,7 +254,7 @@ public class PlatformerController : RigidBodyController {
                         jumpCallback(this);
                 }
                 else if(!isSlopSlide) {
-                    if(isGrounded || (mJumpCounter < jumpCounter && (jumpDropAllow || mJumpCounter > 0))) {
+                    if(isGrounded || (mJumpCounter < jumpCounter && (Time.fixedTime - mLastGroundTime < jumpAirDelay || jumpDropAllow || mJumpCounter > 0))) {
                         lockDrag = true;
                         rigidbody.drag = airDrag;
 
@@ -304,76 +286,6 @@ public class PlatformerController : RigidBodyController {
     protected override void WaterExit() {
         if(mJump) {
             mJumpLastTime = Time.fixedTime;
-        }
-    }
-
-    protected override void OnTriggerEnter(Collider col) {
-        if(M8.Util.CheckLayerAndTag(col.gameObject, ladderLayer, ladderTag)) {
-            mLadderUp = col.transform.up;
-
-            if(!M8.MathUtil.RotateToUp(mLadderUp, transform.right, transform.forward, ref mLadderRot))
-                transform.up = mLadderUp;
-
-            mLadderCounter++;
-        }
-
-        if(isOnLadder) {
-            if(gravityController != null) {
-                StartCoroutine(LadderOrientUp());
-                gravityController.enabled = false;
-            }
-            else {
-                mLadderLastGravity = rigidbody.useGravity;
-                rigidbody.useGravity = false;
-            }
-
-            mJumpingWall = false;
-        }
-        else {
-            base.OnTriggerEnter(col);
-        }
-    }
-
-    protected override void OnTriggerStay(Collider col) {
-        if(M8.Util.CheckLayerAndTag(col.gameObject, ladderLayer, ladderTag)) {
-            if(mLadderCounter == 0) {
-                mLadderCounter++;
-
-                if(gravityController != null) {
-                    StartCoroutine(LadderOrientUp());
-                    gravityController.enabled = false;
-                }
-                else {
-                    mLadderLastGravity = rigidbody.useGravity;
-                    rigidbody.useGravity = false;
-                }
-            }
-
-            if(mLadderUp != col.transform.up) {
-                mLadderUp = col.transform.up;
-
-                if(!M8.MathUtil.RotateToUp(mLadderUp, transform.right, transform.forward, ref mLadderRot))
-                    transform.up = mLadderUp;
-            }
-        }
-        else {
-            base.OnTriggerStay(col);
-        }
-    }
-
-    protected override void OnTriggerExit(Collider col) {
-        if(M8.Util.CheckLayerAndTag(col.gameObject, ladderLayer, ladderTag)) {
-            mLadderCounter--;
-        }
-        else {
-            base.OnTriggerExit(col);
-        }
-
-        if(!isOnLadder) {
-            if(gravityController != null)
-                gravityController.enabled = true;
-            else
-                rigidbody.useGravity = mLadderLastGravity;
         }
     }
 
@@ -559,6 +471,7 @@ public class PlatformerController : RigidBodyController {
                     mJumpCounter = 1;*/
 
                 mJumpLastTime = Time.fixedTime;
+                mLastGroundTime = Time.fixedTime;
             }
 
             mLastGround = isGrounded;
@@ -612,7 +525,7 @@ public class PlatformerController : RigidBodyController {
             if(!mMoveSideLock)
                 moveSide = 0.0f;
 
-            if(isOnLadder || (isUnderWater && !isGrounded)) {
+            if(isUnderWater && !isGrounded) {
                 //move forward upwards
                 Move(dirRot, Vector3.up, Vector3.right, new Vector2(moveX, moveY), moveForce);
             }
@@ -655,10 +568,7 @@ public class PlatformerController : RigidBodyController {
 
             //jump
             if(mJump && !mWallSticking) {
-                if(isOnLadder) {
-                    body.AddForce(dirRot * Vector3.up * ladderJumpForce * moveScale);
-                }
-                else if(isUnderWater) {
+                if(isUnderWater) {
                     body.AddForce(dirRot * Vector3.up * jumpWaterForce * moveScale);
                 }
                 else {
@@ -725,9 +635,6 @@ public class PlatformerController : RigidBodyController {
         //set eye rotation
         UpdateCamera(Time.fixedDeltaTime);
 
-        if(isOnLadder)
-            rigidbody.drag = ladderDrag;
-
         //if(CheckPenetrate(0.1f, plankLayer))
         //Debug.Log("planking");
     }
@@ -768,19 +675,6 @@ public class PlatformerController : RigidBodyController {
         }
         else {
             Jump(false);
-        }
-    }
-
-    IEnumerator LadderOrientUp() {
-        WaitForFixedUpdate waitUpdate = new WaitForFixedUpdate();
-
-        while(isOnLadder) {
-            if(transform.up != mLadderUp) {
-                float step = ladderOrientSpeed * Time.fixedDeltaTime;
-                rigidbody.MoveRotation(Quaternion.RotateTowards(transform.rotation, mLadderRot, step));
-            }
-
-            yield return waitUpdate;
         }
     }
 

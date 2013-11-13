@@ -17,6 +17,7 @@ public class Damage : MonoBehaviour {
 
     public float amount;
     public Type type = Type.Energy;
+    public bool stun = false;
 
     public bool CallDamageTo(GameObject target, Vector3 hitPos, Vector3 hitNorm) {
         //target.SendMessage(DamageMessage, this, SendMessageOptions.DontRequireReceiver);
