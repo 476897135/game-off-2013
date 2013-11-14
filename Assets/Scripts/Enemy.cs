@@ -2,6 +2,7 @@
 using System.Collections;
 
 public class Enemy : EntityBase {
+    public const string projGroup = "projEnemy";
     public const float stunDelay = 1.0f;
 
     public bool respawnOnSleep = true; //for regular enemies, this will cause a restart on deactivate
@@ -25,6 +26,9 @@ public class Enemy : EntityBase {
 
     private GravityController mGravCtrl;
     private RigidBodyController mBodyCtrl;
+    private float mDefaultDeactiveDelay;
+
+    private Damage[] mDamageTriggers;
 
     public Stats stats { get { return mStats; } }
 
@@ -65,6 +69,11 @@ public class Enemy : EntityBase {
 
                 CancelInvoke("DoStun");
                 break;
+
+            case EntityState.RespawnWait:
+                if(activator)
+                    activator.deactivateDelay = mDefaultDeactiveDelay;
+                break;
         }
 
         switch((EntityState)state) {
@@ -98,7 +107,11 @@ public class Enemy : EntityBase {
             case EntityState.RespawnWait:
                 //Debug.Log("respawn wait");
                 RevertTransform();
-                activator.ForceActivate();
+
+                if(activator) {
+                    activator.deactivateDelay = 0.0f;
+                    activator.ForceActivate();
+                }
                 break;
         }
     }
@@ -106,13 +119,11 @@ public class Enemy : EntityBase {
     protected override void ActivatorWakeUp() {
         base.ActivatorWakeUp();
 
-        if(state != (int)EntityState.Invalid) {
-            if(mRespawnReady) {
-                //Debug.Log("respawned");
+        if(mRespawnReady) {
+            //Debug.Log("respawned");
 
-                mRespawnReady = false;
-                state = (int)EntityState.Normal;
-            }
+            mRespawnReady = false;
+            state = (int)EntityState.Normal;
         }
     }
 
@@ -173,11 +184,16 @@ public class Enemy : EntityBase {
         mBodyCtrl = GetComponent<RigidBodyController>();
         mGravCtrl = GetComponent<GravityController>();
 
+        mDamageTriggers = GetComponentsInChildren<Damage>(true);
+
         if(!FSM)
             autoSpawnFinish = true;
 
         if(stunGO)
             stunGO.SetActive(false);
+
+        if(activator)
+            mDefaultDeactiveDelay = activator.deactivateDelay;
 
         //initialize variables
     }
@@ -220,6 +236,9 @@ public class Enemy : EntityBase {
 
         if(mBodyCtrl)
             mBodyCtrl.enabled = aActive;
+
+        for(int i = 0, max = mDamageTriggers.Length; i < max; i++)
+            mDamageTriggers[i].gameObject.SetActive(aActive);
     }
 
     /// <summary>
@@ -250,7 +269,7 @@ public class Enemy : EntityBase {
         StopCoroutine(DoRespawnWaitDelayKey);
     }
 
-    void RevertTransform() {
+    protected void RevertTransform() {
         transform.position = mSpawnPos;
         transform.rotation = mSpawnRot;
     }

@@ -217,6 +217,9 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
+        if(controller == null)
+            return;
+
         if(mAnimVelocitySpeedEnabled) {
             float spd = controller.rigidbody.velocity.magnitude;
             anim.ClipFps = spd > minSpeed ? spd * framePerMeter : 0.0f;

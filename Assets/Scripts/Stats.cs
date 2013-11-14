@@ -19,7 +19,10 @@ public class Stats : MonoBehaviour {
 
     public bool stunImmune;
 
-    public LayerMask deathMask;
+    public string deathTag = "Death";
+
+    public int itemDropIndex = -1;
+    public Vector3 itemDropOfs;
 
     public event ChangeCallback changeHPCallback;
 
@@ -60,9 +63,11 @@ public class Stats : MonoBehaviour {
     public Vector3 lastDamageNormal { get { return mLastDamageNorm; } }
 
     public DamageMod GetDamageMod(DamageMod[] dat, Damage.Type type) {
-        for(int i = 0, max = dat.Length; i < max; i++) {
-            if(dat[i].type == type) {
-                return dat[i];
+        if(dat != null) {
+            for(int i = 0, max = dat.Length; i < max; i++) {
+                if(dat[i].type == type) {
+                    return dat[i];
+                }
             }
         }
         return null;
@@ -80,7 +85,7 @@ public class Stats : MonoBehaviour {
                 amt -= amt * damageReduction;
             }
 
-            DamageMod damageAmpByType = GetDamageMod(damageTypeReduction, damage.type);
+            DamageMod damageAmpByType = GetDamageMod(damageTypeAmp, damage.type);
             if(damageAmpByType != null) {
                 amt += amt * damageAmpByType.val;
             }
@@ -92,6 +97,11 @@ public class Stats : MonoBehaviour {
 
             if(amt > 0.0f) {
                 curHP -= amt;
+
+                if(curHP <= 0.0f && itemDropIndex >= 0) {
+                    ItemDropManager.instance.DoDrop(itemDropIndex, transform.position + itemDropOfs);
+                }
+
                 return true;
             }
         }
@@ -114,14 +124,23 @@ public class Stats : MonoBehaviour {
     }
 
     void OnCollisionEnter(Collision col) {
-        if(((1 << col.gameObject.layer) & deathMask) != 0) {
+        if(col.gameObject.CompareTag(deathTag)) {
             curHP = 0;
         }
     }
 
     void OnTriggerEnter(Collider col) {
-        if(((1 << col.gameObject.layer) & deathMask) != 0) {
+        if(col.gameObject.CompareTag(deathTag)) {
             curHP = 0;
+        }
+    }
+
+    void OnDrawGizmosSelected() {
+        if(itemDropIndex >= 0) {
+            Color clr = Color.red;
+            clr.a = 0.5f;
+            Gizmos.color = clr;
+            Gizmos.DrawSphere(transform.position + itemDropOfs, 0.15f);
         }
     }
 }

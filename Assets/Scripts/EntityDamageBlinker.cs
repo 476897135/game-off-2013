@@ -56,7 +56,7 @@ public class EntityDamageBlinker : MonoBehaviour {
             mBlinkMats = new Material[validRenders.Count];
 
             for(int i = 0, max = mBlinkMats.Length; i < max; i++) {
-                validRenders[i].material = mBlinkMats[i] = new Material(validRenders[i].sharedMaterial);
+                validRenders[i].sharedMaterial = mBlinkMats[i] = new Material(validRenders[i].sharedMaterial);
                 mBlinkMats[i].SetFloat(modProperty, 0.0f);
             }
         }

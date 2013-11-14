@@ -40,12 +40,15 @@ public class tk2dCamActivator : EntityActivator {
         if(isActive) {
             if(!_CheckContain()) {
                 if(deactivateDelay > 0.0f) {
-                    Invoke(InActiveDelayInvoke, deactivateDelay);
+                    if(!IsInvoking(InActiveDelayInvoke))
+                        Invoke(InActiveDelayInvoke, deactivateDelay);
                 }
                 else {
                     DoInActive(true);
                 }
             }
+            else
+                CancelInvoke(InActiveDelayInvoke);
         }
         else {
             if(_CheckContain())

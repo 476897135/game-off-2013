@@ -47,7 +47,11 @@ public class WeaponCloner : Weapon {
             if(mLastClone) {
                 //detonate
                 if(mLastClone.state == (int)Projectile.State.Active || mLastClone.state == (int)Projectile.State.Seek) {
-                    mLastClone.state = (int)Projectile.State.Dying;
+                    if(mLastClone.stats)
+                        mLastClone.stats.curHP = 0;
+                    else
+                        mLastClone.state = (int)Projectile.State.Dying;
+
                     mLastClone = null;
                     activeGO.SetActive(false);
                 }

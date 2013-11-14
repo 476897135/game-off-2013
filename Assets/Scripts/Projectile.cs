@@ -41,10 +41,15 @@ public class Projectile : EntityBase {
     public float seekVelocityCap = 5.0f;
     public float seekAngleCap = 360.0f;
 
+    public bool decayEnabled = true;
     public float decayDelay;
 
     public bool releaseOnDie;
+
     public float dieDelay;
+    public bool dieBlink;
+    public bool dieDisablePhysics = true;
+
     public bool releaseOnSleep;
 
     public LayerMask explodeMask;
@@ -94,6 +99,8 @@ public class Projectile : EntityBase {
 
         return ret;
     }
+
+    public bool isAlive { get { return (State)state == State.Active || (State)state == State.Seek; } }
 
     public Transform seek {
         get { return mSeek; }
@@ -202,11 +209,12 @@ public class Projectile : EntityBase {
 
         mSpawning = false;
 
-        if(decayDelay == 0) {
+        if(decayEnabled && decayDelay == 0) {
             OnDecayEnd();
         }
         else {
-            Invoke("OnDecayEnd", decayDelay);
+            if(decayEnabled)
+                Invoke("OnDecayEnd", decayDelay);
 
             if(seekStartDelay > 0.0f) {
                 state = (int)State.Active;
@@ -275,51 +283,55 @@ public class Projectile : EntityBase {
             case State.Dying:
                 CancelInvoke();
 
-                mCurVelocity = Vector3.zero;
+                if(dieDisablePhysics)
+                    PhysicsDisable();
 
-                if(collider)
-                    collider.enabled = false;
+                if(dieDelay > 0) {
+                    if(dieBlink)
+                        Blink(dieDelay);
 
-                if(rigidbody) {
-                    rigidbody.detectCollisions = false;
-                    rigidbody.velocity = Vector3.zero;
-                    rigidbody.angularVelocity = Vector3.zero;
+                    Invoke("Die", dieDelay);
                 }
-
-                if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
-                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null,
-                        explodeOnDeath ? transform.localToWorldMatrix.MultiplyPoint(explodeOfs) : transform.position,
-                        Quaternion.identity);
-                }
-
-                if(explodeOnDeath && explodeRadius > 0.0f) {
-                    DoExplode();
-                }
-
-                if(releaseOnDie) {
-                    if(dieDelay > 0)
-                        Invoke("Release", dieDelay);
-                    else
-                        Release();
-                }
+                else
+                    Die();
                 break;
 
             case State.Invalid:
-                mCurVelocity = Vector3.zero;
-                if(collider)
-                    collider.enabled = false;
-
-                if(rigidbody) {
-                    rigidbody.detectCollisions = false;
-                    rigidbody.velocity = Vector3.zero;
-                    rigidbody.angularVelocity = Vector3.zero;
-                }
+                PhysicsDisable();
 
                 if(mStats) {
                     mStats.Reset();
                     mStats.isInvul = true;
                 }
                 break;
+        }
+    }
+
+    void PhysicsDisable() {
+        mCurVelocity = Vector3.zero;
+        if(collider)
+            collider.enabled = false;
+
+        if(rigidbody) {
+            rigidbody.detectCollisions = false;
+            rigidbody.velocity = Vector3.zero;
+            rigidbody.angularVelocity = Vector3.zero;
+        }
+    }
+
+    void Die() {
+        if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
+            Vector2 p = explodeOnDeath ? transform.localToWorldMatrix.MultiplyPoint(explodeOfs) : transform.position;
+
+            PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, p, Quaternion.identity);
+        }
+
+        if(explodeOnDeath && explodeRadius > 0.0f) {
+            DoExplode();
+        }
+
+        if(releaseOnDie) {
+            Release();
         }
     }
 
@@ -392,18 +404,29 @@ public class Projectile : EntityBase {
         }
 
         //do damage
+        //if(!explodeOnDeath && CheckTag(go.tag)) {
+            //mDamage.CallDamageTo(go, pos, normal);
+        //}
+    }
+
+    void ApplyDamage(GameObject go, Vector3 pos, Vector3 normal) {
         if(!explodeOnDeath && CheckTag(go.tag)) {
             mDamage.CallDamageTo(go, pos, normal);
         }
     }
 
     void OnCollisionEnter(Collision collision) {
-        if(state == (int)State.Active || state == (int)State.Seek) {
-            foreach(ContactPoint cp in collision.contacts) {
-                ApplyContact(cp.otherCollider.gameObject, cp.point, cp.normal);
+        foreach(ContactPoint cp in collision.contacts) {
+            ApplyContact(cp.otherCollider.gameObject, cp.point, cp.normal);
+            ApplyDamage(cp.otherCollider.gameObject, cp.point, cp.normal);
+        }
+    }
 
-                if(state == (int)State.Dying || state == (int)State.Invalid)
-                    break;
+    void OnCollisionStay(Collision collision) {
+        if(state != (int)State.Invalid) {
+            //do damage
+            foreach(ContactPoint cp in collision.contacts) {
+                ApplyDamage(cp.otherCollider.gameObject, cp.point, cp.normal);
             }
         }
     }
@@ -457,6 +480,7 @@ public class Projectile : EntityBase {
             if(Physics.SphereCast(mSphereColl.bounds.center, mSphereColl.radius, dir, out hit, d, simpleLayerMask)) {
                 transform.position = hit.point + hit.normal * mSphereColl.radius;
                 ApplyContact(hit.collider.gameObject, hit.point, hit.normal);
+                ApplyDamage(hit.collider.gameObject, hit.point, hit.normal);
             }
         }
 
