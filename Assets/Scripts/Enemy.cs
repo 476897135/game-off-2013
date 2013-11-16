@@ -3,6 +3,8 @@ using System.Collections;
 
 public class Enemy : EntityBase {
     public const string projGroup = "projEnemy";
+    public const string projCommonType = "enemyBullet";
+
     public const float stunDelay = 1.0f;
 
     public bool respawnOnSleep = true; //for regular enemies, this will cause a restart on deactivate
@@ -10,12 +12,16 @@ public class Enemy : EntityBase {
     public bool toRespawnAuto = true; //if true, wait for a delay during death to wait for respawn
     public float toRespawnDelay = 0.0f;
 
+    public bool releaseOnDeath = false;
+
     public AnimatorData animator; //if this enemy is controlled by an animator (usu. as parent)
     public GameObject visibleGO; //the game object to deactivate while dead/respawning
     public GameObject stunGO;
 
     public string deathSpawnGroup; //upon death, spawn this
     public string deathSpawnType;
+    public Transform deathSpawnAttach;
+    public Vector3 deathSpawnOfs;
 
     private Stats mStats;
     private bool mRespawnReady;
@@ -87,12 +93,16 @@ public class Enemy : EntityBase {
                     visibleGO.SetActive(false);
 
                 if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
-                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, transform.position, Quaternion.identity);
+                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, 
+                        (deathSpawnAttach ? deathSpawnAttach : transform).localToWorldMatrix.MultiplyPoint(deathSpawnOfs), 
+                        Quaternion.identity);
                 }
 
                 if(toRespawnAuto) {
                     StartCoroutine(DoRespawnWaitDelayKey);
                 }
+                else if(releaseOnDeath)
+                    Release();
                 break;
 
             case EntityState.Stun:
@@ -299,5 +309,14 @@ public class Enemy : EntityBase {
     void DoStun() {
         if(state == (int)EntityState.Stun)
             state = (int)EntityState.Normal;
+    }
+
+    protected virtual void OnDrawGizmosSelected() {
+        if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
+            Color clr = Color.cyan;
+            clr.a = 0.3f;
+            Gizmos.color = clr;
+            Gizmos.DrawSphere((deathSpawnAttach ? deathSpawnAttach : transform).localToWorldMatrix.MultiplyPoint(deathSpawnOfs), 0.25f);
+        }
     }
 }

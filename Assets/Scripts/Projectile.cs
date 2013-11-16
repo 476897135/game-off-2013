@@ -74,16 +74,16 @@ public class Projectile : EntityBase {
     private bool mSpawning = false;
 
     protected Vector3 mActiveForce;
-    protected Vector3 mStartDir = Vector3.zero;
+    protected Vector3 mDir = Vector3.zero;
     protected Transform mSeek = null;
 
     protected Vector3 mCurVelocity; //only use by simple
 
     private Damage mDamage;
     private float mDefaultSpeedLimit;
-    private SphereCollider mSphereColl;
+    protected SphereCollider mSphereColl;
 
-    private float mMoveScale = 1.0f;
+    protected float mMoveScale = 1.0f;
 
     private Stats mStats;
 
@@ -93,7 +93,7 @@ public class Projectile : EntityBase {
     public static Projectile Create(string group, string typeName, Vector3 startPos, Vector3 dir, Transform seek) {
         Projectile ret = Spawn<Projectile>(group, typeName, startPos);
         if(ret != null) {
-            ret.mStartDir = dir;
+            ret.mDir = dir;
             ret.mSeek = seek;
         }
 
@@ -213,6 +213,24 @@ public class Projectile : EntityBase {
             OnDecayEnd();
         }
         else {
+            //starting direction and force
+            if(simple) {
+                mCurVelocity = mDir * startVelocity;
+            }
+            else {
+                if(rigidbody != null && mDir != Vector3.zero) {
+                    //set velocity
+                    if(startVelocityAddRand != 0.0f) {
+                        rigidbody.velocity = mDir * (startVelocity + Random.value * startVelocityAddRand);
+                    }
+                    else {
+                        rigidbody.velocity = mDir * startVelocity;
+                    }
+
+                    mActiveForce = mDir * force;
+                }
+            }
+
             if(decayEnabled)
                 Invoke("OnDecayEnd", decayDelay);
 
@@ -224,35 +242,17 @@ public class Projectile : EntityBase {
             else {
                 OnSeekStart();
             }
-
-            //starting direction and force
-            if(simple) {
-                mCurVelocity = mStartDir * startVelocity;
-            }
-            else {
-                if(rigidbody != null && mStartDir != Vector3.zero) {
-                    //set velocity
-                    if(startVelocityAddRand != 0.0f) {
-                        rigidbody.velocity = mStartDir * (startVelocity + Random.value * startVelocityAddRand);
-                    }
-                    else {
-                        rigidbody.velocity = mStartDir * startVelocity;
-                    }
-
-                    mActiveForce = mStartDir * force;
-                }
-            }
-
+                        
             if(applyDirToUp) {
-                applyDirToUp.up = mStartDir;
+                applyDirToUp.up = mDir;
                 InvokeRepeating("OnUpUpdate", 0.1f, 0.1f);
             }
         }
     }
 
     protected override void SpawnStart() {
-        if(applyDirToUp && mStartDir != Vector3.zero) {
-            applyDirToUp.up = mStartDir;
+        if(applyDirToUp && mDir != Vector3.zero) {
+            applyDirToUp.up = mDir;
         }
 
         mSpawning = true;
@@ -459,6 +459,37 @@ public class Projectile : EntityBase {
         }
     }
 
+    protected void DoSimpleMove(Vector3 delta) {
+        float d = delta.magnitude;
+
+        if(d > 0.0f) {
+            Vector3 pos = mSphereColl.bounds.center;
+            Vector3 dir = new Vector3(delta.x / d, delta.y / d, delta.z / d);
+
+            //check if hit something
+            RaycastHit hit;
+            if(Physics.SphereCast(pos, mSphereColl.radius, dir, out hit, d, simpleLayerMask)) {
+                transform.position = hit.point + hit.normal * mSphereColl.radius;
+                ApplyContact(hit.collider.gameObject, hit.point, hit.normal);
+                ApplyDamage(hit.collider.gameObject, hit.point, hit.normal);
+            }
+            else {
+                //try contain
+                Collider[] cols = Physics.OverlapSphere(pos, mSphereColl.radius, simpleLayerMask);
+                for(int i = 0, max = cols.Length; i < max; i++) {
+                    Collider col = cols[i];
+                    dir = (col.bounds.center - pos).normalized;
+                    ApplyContact(col.gameObject, pos, dir);
+                    ApplyDamage(col.gameObject, pos, dir);
+                }
+            }
+        }
+
+        //make sure we are still active
+        if((State)state == State.Active || (State)state == State.Seek)
+            transform.position = transform.position + delta;
+    }
+
     void DoSimple() {
         Vector3 curV = mCurVelocity * mMoveScale;
 
@@ -470,26 +501,10 @@ public class Projectile : EntityBase {
         }
 
         Vector3 delta = curV * Time.fixedDeltaTime;
-        float d = delta.magnitude;
-
-        if(d > 0.0f) {
-            Vector3 dir = new Vector3(delta.x / d, delta.y / d, delta.z / d);
-
-            //check if hit something
-            RaycastHit hit;
-            if(Physics.SphereCast(mSphereColl.bounds.center, mSphereColl.radius, dir, out hit, d, simpleLayerMask)) {
-                transform.position = hit.point + hit.normal * mSphereColl.radius;
-                ApplyContact(hit.collider.gameObject, hit.point, hit.normal);
-                ApplyDamage(hit.collider.gameObject, hit.point, hit.normal);
-            }
-        }
-
-        //make sure we are still active
-        if((State)state == State.Active)
-            transform.position = transform.position + delta;
+        DoSimpleMove(delta);
     }
 
-    void FixedUpdate() {
+    protected virtual void FixedUpdate() {
         switch((State)state) {
             case State.Active:
                 if(simple) {
@@ -504,7 +519,8 @@ public class Projectile : EntityBase {
                             }
                         }
 
-                        rigidbody.AddForce(mActiveForce * mMoveScale);
+                        if(mActiveForce != Vector3.zero)
+                            rigidbody.AddForce(mActiveForce * mMoveScale);
                     }
                 }
                 break;

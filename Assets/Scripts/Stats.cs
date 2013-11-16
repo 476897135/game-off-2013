@@ -99,7 +99,7 @@ public class Stats : MonoBehaviour {
                 curHP -= amt;
 
                 if(curHP <= 0.0f && itemDropIndex >= 0) {
-                    ItemDropManager.instance.DoDrop(itemDropIndex, transform.position + itemDropOfs);
+                    ItemDropManager.instance.DoDrop(itemDropIndex, transform.localToWorldMatrix.MultiplyPoint(itemDropOfs));
                 }
 
                 return true;
@@ -140,7 +140,7 @@ public class Stats : MonoBehaviour {
             Color clr = Color.red;
             clr.a = 0.5f;
             Gizmos.color = clr;
-            Gizmos.DrawSphere(transform.position + itemDropOfs, 0.15f);
+            Gizmos.DrawSphere(transform.localToWorldMatrix.MultiplyPoint(itemDropOfs), 0.15f);
         }
     }
 }

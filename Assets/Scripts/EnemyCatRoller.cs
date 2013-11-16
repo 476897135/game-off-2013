@@ -8,6 +8,8 @@ public class EnemyCatRoller : Enemy {
 
     public float defaultMoveSide = -1.0f;
 
+    public bool ignoreFallDetect = false;
+
     private EntitySensor mSensor;
     private Projectile mRock;
     private PlatformerController mRockCtrl;
@@ -79,7 +81,8 @@ public class EnemyCatRoller : Enemy {
         base.Awake();
 
         mSensor = GetComponent<EntitySensor>();
-        mSensor.updateCallback += OnSensorUpdate;
+        if(mSensor)
+            mSensor.updateCallback += OnSensorUpdate;
 
         mSpriteCtrl = GetComponent<PlatformerSpriteController>();
     }
@@ -129,7 +132,7 @@ public class EnemyCatRoller : Enemy {
                         //Debug.Log("move side: " + mRockCtrl.moveSide);
                     }
                 }
-                else {
+                else if(!ignoreFallDetect) {
                     if(mRockCtrl.isGrounded) {
                         mRockCtrl.rigidbody.velocity = Vector3.zero;
                         mRockCtrl.moveSide *= -1.0f;
@@ -140,7 +143,9 @@ public class EnemyCatRoller : Enemy {
         }
     }
 
-    void OnDrawGizmosSelected() {
+    protected override void OnDrawGizmosSelected() {
+        base.OnDrawGizmosSelected();
+
         Vector3 pos = transform.position;
         pos.y += rockYOfs;
 

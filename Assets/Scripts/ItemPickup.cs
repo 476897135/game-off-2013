@@ -89,14 +89,7 @@ public class ItemPickup : EntityBase {
 
             //TODO: dialog?
 
-            if(mSpawned) {
-                Release();
-            }
-            else {
-                if(activator)
-                    activator.ForceActivate();
-                gameObject.SetActive(false);
-            }
+            Release();
         }
     }
 

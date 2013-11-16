@@ -11,6 +11,7 @@ public class EntityDamageBlinker : MonoBehaviour {
     public string modProperty = "_Mod";
     public bool invulOnBlink = false;
 
+    private Renderer[] mRenderers;
     private Material[] mBlinkMats;
     private bool mBlinkOn;
     private bool mBlinkIntervalActive;
@@ -53,9 +54,12 @@ public class EntityDamageBlinker : MonoBehaviour {
                 }
             }
 
+            mRenderers = new Renderer[validRenders.Count];
             mBlinkMats = new Material[validRenders.Count];
 
             for(int i = 0, max = mBlinkMats.Length; i < max; i++) {
+                mRenderers[i] = validRenders[i];
+
                 validRenders[i].sharedMaterial = mBlinkMats[i] = new Material(validRenders[i].sharedMaterial);
                 mBlinkMats[i].SetFloat(modProperty, 0.0f);
             }
@@ -67,6 +71,11 @@ public class EntityDamageBlinker : MonoBehaviour {
         mStats = GetComponent<Stats>();
         if(mStats)
             mStats.changeHPCallback += OnStatsHPChange;
+
+        tk2dBaseSprite[] sprites = GetComponentsInChildren<tk2dBaseSprite>(true);
+        foreach(tk2dBaseSprite spr in sprites) {
+            spr.SpriteChanged += OnSpriteChanged;
+        }
     }
 
     void Start() {
@@ -74,7 +83,7 @@ public class EntityDamageBlinker : MonoBehaviour {
     }
 
     void OnStatsHPChange(Stats stat, float delta) {
-        if(stat.curHP > 0.0f && delta < 0.0f) {
+        if(mEnt.gameObject.activeInHierarchy && stat.curHP > 0.0f && delta < 0.0f) {
             mEnt.Blink(blinkDelay);
         }
     }
@@ -114,5 +123,14 @@ public class EntityDamageBlinker : MonoBehaviour {
         }
 
         mBlinkOn = !mBlinkOn;
+    }
+
+    void OnSpriteChanged(tk2dBaseSprite spr) {
+        for(int i = 0, max = mRenderers.Length; i < max; i++) {
+            if(spr.renderer == mRenderers[i]) {
+                mRenderers[i].sharedMaterial = mBlinkMats[i];
+                break;
+            }
+        }
     }
 }
