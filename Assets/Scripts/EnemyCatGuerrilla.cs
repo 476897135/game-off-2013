@@ -15,6 +15,10 @@ public class EnemyCatGuerrilla : Enemy {
 
     public string projType;
 
+    public float projVelocity = 10.0f;
+    public float projFarVelocity = 12.0f;
+    public float projNearVelocity = 6.0f;
+
     public float acquireRange; //radius to find target
     public LayerMask acquireMask;
 
@@ -131,6 +135,13 @@ public class EnemyCatGuerrilla : Enemy {
                 pt.z = 0.0f;
                 mCurProj = Projectile.Create(projGroup, projType, pt, attackPoint.up, mCurTarget);
                 mCurProj.releaseCallback += OnProjRelease;
+
+                ProjectileArc projArc = mCurProj as ProjectileArc;
+                if(projArc) {
+                    projArc.seekVelocity = projVelocity;
+                    projArc.nearVelocity = projNearVelocity;
+                    projArc.farVelocity = projFarVelocity;
+                }
             }
             else if(aClip == mAttackClip) {
                 anim.Play(mIdleClip);

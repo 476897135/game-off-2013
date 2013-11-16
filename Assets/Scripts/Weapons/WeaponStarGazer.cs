@@ -22,8 +22,16 @@ public class WeaponStarGazer : Weapon {
     }
 
     protected override void OnProjRelease(EntityBase ent) {
-        if(mLastLargeStar == ent)
+        if(mLastLargeStar == ent) {
+            for(int i = 0; i < Player.instance.controller.collisionCount; i++) {
+                if(Player.instance.controller.collisionData[i].collider == mLastLargeStar.collider) {
+                    Player.instance.controller.ResetCollision();
+                    break;
+                }
+            }
+
             mLastLargeStar = null;
+        }
 
         base.OnProjRelease(ent);
     }

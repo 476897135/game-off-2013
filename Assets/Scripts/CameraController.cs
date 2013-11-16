@@ -90,7 +90,7 @@ public class CameraController : MonoBehaviour {
         }
 
         Vector3 curPos = transform.position;
-        Vector3 dest = mAttach ? mAttach.position : curPos;
+        Vector3 dest = mAttach ? mAttach.collider ? mAttach.collider.bounds.center : mAttach.position : curPos;
 
         //apply bounds
         switch(mode) {

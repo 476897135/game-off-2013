@@ -2,7 +2,7 @@
 using System.Collections;
 
 public class ItemPickup : EntityBase {
-    public const float destroyDelay = 3.0f;
+    public const float destroyDelay = 4.0f;
     public const float destroyStartBlinkDelay = destroyDelay * 0.7f;
 
     public ItemType type;

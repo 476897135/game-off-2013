@@ -139,6 +139,8 @@ public class PlatformerController : RigidBodyController {
 
     public bool isWallStick { get { return mWallSticking; } }
 
+    public bool isOnPlatform { get { return mIsOnPlatform; } }
+
     public CollideInfo wallStickCollide { get { return mWallStickCollInfo; } }
     public M8.MathUtil.Side wallStickSide { get { return mWallStickSide; } }
 

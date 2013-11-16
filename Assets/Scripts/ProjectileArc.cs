@@ -11,20 +11,22 @@ public class ProjectileArc : Projectile {
     public float nearVelocity;
     public float nearDistance;
 
+    public float straightVelocity = 18.0f; //if theta is invalid
+
     protected override void StateChanged() {
         base.StateChanged();
 
         switch((State)state) {
             case State.Seek:
                 Vector3 pos = collider.bounds.center;
-                Vector3 target = mSeek.collider ? mSeek.collider.bounds.center : mSeek.position;
+                Vector3 target = mSeek.position;
                 if(target.x != pos.x) {
                     float vel = seekVelocity;
                                        
                     float x = target.x - pos.x;
                     float y = target.y - pos.y;
 
-                    float distSqr = y < 0.0f ? x*x : (target - pos).sqrMagnitude;
+                    float distSqr = target.y < pos.y ? x * x : (target - pos).sqrMagnitude;
                     if(distSqr > farDistance * farDistance)
                         vel = farVelocity;
                     else if(distSqr < nearDistance * nearDistance)
@@ -37,11 +39,14 @@ public class ProjectileArc : Projectile {
 
                     float theta = Mathf.Atan((vSqr + Mathf.Sqrt(vSqr * vSqr + grav * (grav * x * x + 2 * y * vSqr))) / (grav * x));
                     if(float.IsNaN(theta)) {
-                        theta = Mathf.PI * 0.5f;
+                        mDir = new Vector3(x, y, 0);
+                        mDir.Normalize();
+                        vel = straightVelocity;
                     }
-
-                    mDir.Set(Mathf.Sign(x), 0, 0);
-                    mDir = Quaternion.AngleAxis(Mathf.Rad2Deg * theta, Vector3.forward) * mDir;
+                    else {
+                        mDir.Set(Mathf.Sign(x), 0, 0);
+                        mDir = Quaternion.AngleAxis(Mathf.Rad2Deg * theta, Vector3.forward) * mDir;
+                    }
 
                     rigidbody.velocity = mDir * vel;// .AddForce(mDir * vel, ForceMode.VelocityChange);
                     //Debug.Log("theta: " + (Mathf.Rad2Deg * theta));
