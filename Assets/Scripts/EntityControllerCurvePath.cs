@@ -28,10 +28,14 @@ public class EntityControllerCurvePath : MonoBehaviour {
     private float mCurTime;
     private Vector3 mOrigin;
 
+    private TimeWarp mTimeWarp;
+
     void Awake() {
         mEnt = GetComponent<EntityBase>();
         mEnt.spawnCallback += OnEntitySpawn;
         mEnt.setStateCallback += OnEntityState;
+
+        mTimeWarp = GetComponent<TimeWarp>();
     }
 
     // Update is called once per frame
@@ -41,11 +45,13 @@ public class EntityControllerCurvePath : MonoBehaviour {
 
             float dir = sprite.FlipX ? -1.0f : 1.0f;
 
-            mCurTime += dir * Time.fixedDeltaTime;
+            float dt = mTimeWarp ? Time.fixedDeltaTime * mTimeWarp.scale : Time.fixedDeltaTime;
+
+            mCurTime += dir * dt;
 
             float t = mCurTime / delay;
 
-            float delta = dir * speed * Time.fixedDeltaTime;
+            float delta = dir * speed * dt;
             float val = curve.Evaluate(t) * curveScale;
 
             Vector3 deltaPos = Vector3.zero;

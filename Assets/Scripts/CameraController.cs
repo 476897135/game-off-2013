@@ -48,7 +48,7 @@ public class CameraController : MonoBehaviour {
 
     public void SetTransition(bool transition) {
         mDoTrans = transition;
-        mLastTransTime = Time.time;
+        mLastTransTime = Time.fixedTime;
         mCurVel = Vector3.zero;
         mCurDelay = transitionDelay;
     }
@@ -73,12 +73,12 @@ public class CameraController : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update() {
+    void FixedUpdate() {
         if(mode == Mode.Lock)
             return;
 
         if(mDoTrans) {
-            float curT = Time.time - mLastTransTime;
+            float curT = Time.fixedTime - mLastTransTime;
             if(curT >= transitionExpire) {
                 mDoTrans = false;
                 mCurDelay = delay;
@@ -110,7 +110,12 @@ public class CameraController : MonoBehaviour {
         }
 
         if(curPos != dest) {
-            transform.position = Vector3.SmoothDamp(curPos, dest, ref mCurVel, mCurDelay, Mathf.Infinity, Time.deltaTime);
+            if(rigidbody) {
+                rigidbody.MovePosition(Vector3.SmoothDamp(curPos, dest, ref mCurVel, mCurDelay, Mathf.Infinity, Time.fixedDeltaTime));
+            }
+            else {
+                transform.position = Vector3.SmoothDamp(curPos, dest, ref mCurVel, mCurDelay, Mathf.Infinity, Time.fixedDeltaTime);
+            }
         }
     }
 

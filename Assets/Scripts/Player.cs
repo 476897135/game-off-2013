@@ -63,7 +63,7 @@ public class Player : EntityBase {
 
                 //enable new one
                 Weapon weapon = weapons[mCurWeaponInd];
-                                
+
                 //show energy thing
                 HUD hud = HUD.instance;
 
@@ -80,7 +80,7 @@ public class Player : EntityBase {
                 }
 
                 mCtrlSpr.animLibIndex = weapon.playerAnimIndex;
-                                
+
                 weapon.gameObject.SetActive(true);
             }
         }
@@ -257,6 +257,9 @@ public class Player : EntityBase {
 
         base.Awake();
 
+        //CameraController camCtrl = CameraController.instance;
+        //camCtrl.transform.position = collider.bounds.center;
+
         //initialize variables
         Main.instance.input.AddButtonCall(0, InputAction.MenuEscape, OnInputPause);
 
@@ -279,7 +282,7 @@ public class Player : EntityBase {
 
         mStats.changeHPCallback += OnStatsHPChange;
         mStats.changeMaxHPCallback += OnStatsHPMaxChange;
-                
+
         mBlinks = GetComponentsInChildren<SpriteColorBlink>(true);
         foreach(SpriteColorBlink blinker in mBlinks) {
             blinker.enabled = false;

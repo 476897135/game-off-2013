@@ -10,29 +10,37 @@ public class TimeWarp : MonoBehaviour {
     private TransAnimSpinner[] mSpinners;
     private AnimatorData[] animDats;
 
+    private float mScale = 1.0f;
+
+    public float scale { get { return mScale; } }
+
     public void SetScale(float scale) {
-        if(scale < 1.0f && target.rigidbody) {
-            Vector3 v = target.rigidbody.velocity;
-            float mag = v.magnitude;
-            if(mag > 0.0f) {
-                target.rigidbody.velocity = (v / mag) * (mag * 0.3f);
+        if(mScale != scale) {
+            mScale = scale;
+
+            if(scale < 1.0f && target.rigidbody) {
+                Vector3 v = target.rigidbody.velocity;
+                float mag = v.magnitude;
+                if(mag > 0.0f) {
+                    target.rigidbody.velocity = (v / mag) * (mag * 0.3f);
+                }
             }
+
+            for(int i = 0; i < mProjs.Length; i++)
+                mProjs[i].moveScale = scale;
+
+            for(int i = 0; i < mBodyCtrls.Length; i++)
+                mBodyCtrls[i].moveScale = scale;
+
+            for(int i = 0; i < mGravCtrls.Length; i++)
+                mGravCtrls[i].moveScale = scale;
+
+            for(int i = 0; i < mSpinners.Length; i++)
+                mSpinners[i].speedScale = scale;
+
+            for(int i = 0; i < animDats.Length; i++)
+                animDats[i].animScale = scale;
         }
-
-        for(int i = 0; i < mProjs.Length; i++)
-            mProjs[i].moveScale = scale;
-
-        for(int i = 0; i < mBodyCtrls.Length; i++)
-            mBodyCtrls[i].moveScale = scale;
-
-        for(int i = 0; i < mGravCtrls.Length; i++)
-            mGravCtrls[i].moveScale = scale;
-
-        for(int i = 0; i < mSpinners.Length; i++)
-            mSpinners[i].speedScale = scale;
-
-        for(int i = 0; i < animDats.Length; i++)
-            animDats[i].animScale = scale;
     }
 
     public void Restore() {
