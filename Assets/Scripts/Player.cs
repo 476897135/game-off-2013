@@ -161,6 +161,19 @@ public class Player : EntityBase {
             case EntityState.Hurt:
                 mHurtActive = false;
                 break;
+
+            case EntityState.Lock:
+                inputEnabled = true;
+
+                InputManager input = Main.instance != null ? Main.instance.input : null;
+                if(input) {
+                    input.AddButtonCall(0, InputAction.MenuEscape, OnInputPause);
+                }
+
+                mStats.isInvul = false;
+
+                mCtrl.moveSideLock = false;
+                break;
         }
 
         switch((EntityState)state) {
@@ -182,29 +195,48 @@ public class Player : EntityBase {
                 StartCoroutine(DoHurtForce(mStats.lastDamageNormal));
                 break;
 
-            case EntityState.Dead:
-                mCtrl.enabled = false;
-                rigidbody.isKinematic = true;
-                rigidbody.detectCollisions = false;
-                collider.enabled = false;
+            case EntityState.Dead: {
+                    mCtrl.enabled = false;
+                    rigidbody.isKinematic = true;
+                    rigidbody.detectCollisions = false;
+                    collider.enabled = false;
 
-                //disable all input
-                inputEnabled = false;
+                    //disable all input
+                    inputEnabled = false;
 
-                InputManager input = Main.instance != null ? Main.instance.input : null;
-                if(input) {
-                    input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
+                    InputManager input = Main.instance != null ? Main.instance.input : null;
+                    if(input) {
+                        input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
+                    }
+                    //
+
+                    mCtrlSpr.anim.gameObject.SetActive(false);
+
+                    if(deathGOActivate)
+                        deathGOActivate.SetActive(true);
+
+                    PlayerStats.curLife--;
+
+                    StartCoroutine(DoDeathFinishDelay());
                 }
-                //
+                break;
 
-                mCtrlSpr.anim.gameObject.SetActive(false);
+            case EntityState.Lock: {
+                    //disable all input
+                    inputEnabled = false;
 
-                if(deathGOActivate)
-                    deathGOActivate.SetActive(true);
+                    InputManager input = Main.instance != null ? Main.instance.input : null;
+                    if(input) {
+                        input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
+                    }
+                    //
 
-                PlayerStats.curLife--;
+                    mStats.isInvul = true;
 
-                StartCoroutine(DoDeathFinishDelay());
+                    mCtrl.moveSideLock = true;
+                    mCtrl.moveSide = 0.0f;
+                    mCtrl.ResetCollision();
+                }
                 break;
 
             case EntityState.Invalid:
