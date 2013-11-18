@@ -31,12 +31,39 @@ public class Enemy : EntityBase {
     private bool mSpawnRigidBodyKinematic;
 
     private GravityController mGravCtrl;
-    private RigidBodyController mBodyCtrl;
+    private PlatformerController mBodyCtrl;
     private float mDefaultDeactiveDelay;
 
     private Damage[] mDamageTriggers;
 
+    private float mJumpCurDelay; //set to > 0 to jump
+
+    private bool mUseBossHP;
+
     public Stats stats { get { return mStats; } }
+    public PlatformerController bodyCtrl { get { return mBodyCtrl; } }
+    public GravityController gravityCtrl { get { return mGravCtrl; } }
+
+    public void Jump(float delay) {
+        mJumpCurDelay = delay;
+        state = (int)EntityState.Jump;
+    }
+
+    public void BossHPEnable() {
+        //only call this once
+        if(!mUseBossHP) {
+            mUseBossHP = true;
+            HUD.instance.barBoss.current = 0; // make sure to call fill hp for that dramatic boss start moment
+            HUD.instance.barBoss.max = Mathf.CeilToInt(mStats.maxHP);
+            HUD.instance.barBoss.gameObject.SetActive(true);
+            HUD.instance.barBoss.animateEndCallback += OnHPBarFilled;
+        }
+    }
+
+    public void BossHPFill() {
+        Player.instance.Pause(true);
+        HUD.instance.barBoss.currentSmooth = Mathf.CeilToInt(mStats.maxHP);
+    }
 
     /// <summary>
     /// Call this for manual respawn wait during death sequence
@@ -67,6 +94,10 @@ public class Enemy : EntityBase {
 
     protected override void StateChanged() {
         switch((EntityState)prevState) {
+            case EntityState.Jump:
+                mJumpCurDelay = 0.0f;
+                break;
+
             case EntityState.Stun:
                 if(stunGO)
                     stunGO.SetActive(false);
@@ -79,6 +110,8 @@ public class Enemy : EntityBase {
             case EntityState.RespawnWait:
                 if(activator)
                     activator.deactivateDelay = mDefaultDeactiveDelay;
+
+                mStats.isInvul = false;
                 break;
         }
 
@@ -93,8 +126,8 @@ public class Enemy : EntityBase {
                     visibleGO.SetActive(false);
 
                 if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
-                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, 
-                        (deathSpawnAttach ? deathSpawnAttach : transform).localToWorldMatrix.MultiplyPoint(deathSpawnOfs), 
+                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null,
+                        (deathSpawnAttach ? deathSpawnAttach : transform).localToWorldMatrix.MultiplyPoint(deathSpawnOfs),
                         Quaternion.identity);
                 }
 
@@ -114,6 +147,11 @@ public class Enemy : EntityBase {
                 Invoke("DoStun", stunDelay);
                 break;
 
+            case EntityState.Jump:
+                //assumes mJumpCurDelay has been set
+                mBodyCtrl.Jump(true);
+                break;
+
             case EntityState.RespawnWait:
                 //Debug.Log("respawn wait");
                 RevertTransform();
@@ -131,7 +169,6 @@ public class Enemy : EntityBase {
 
         if(mRespawnReady) {
             //Debug.Log("respawned");
-
             mRespawnReady = false;
             state = (int)EntityState.Normal;
         }
@@ -149,6 +186,7 @@ public class Enemy : EntityBase {
             case EntityState.Normal:
             case EntityState.Hurt:
             case EntityState.Stun:
+            case EntityState.Jump:
                 if(respawnOnSleep) {
                     SetPhysicsActive(false, false);
 
@@ -173,6 +211,8 @@ public class Enemy : EntityBase {
 
     public override void SpawnFinish() {
         //start ai, player control, etc
+        mStats.isInvul = false;
+
         state = (int)EntityState.Normal;
     }
 
@@ -190,8 +230,12 @@ public class Enemy : EntityBase {
 
         mStats = GetComponent<Stats>();
         mStats.changeHPCallback += OnStatsHPChange;
+        mStats.isInvul = true;
 
-        mBodyCtrl = GetComponent<RigidBodyController>();
+        mBodyCtrl = GetComponent<PlatformerController>();
+        if(mBodyCtrl)
+            mBodyCtrl.moveSideLock = true;
+
         mGravCtrl = GetComponent<GravityController>();
 
         mDamageTriggers = GetComponentsInChildren<Damage>(true);
@@ -266,6 +310,7 @@ public class Enemy : EntityBase {
         Blink(0.0f);
 
         mStats.Reset();
+        mStats.isInvul = true;
 
         if(FSM)
             FSM.Reset();
@@ -276,6 +321,8 @@ public class Enemy : EntityBase {
         if(stunGO)
             stunGO.SetActive(false);
 
+        mJumpCurDelay = 0.0f;
+
         StopCoroutine(DoRespawnWaitDelayKey);
     }
 
@@ -285,6 +332,9 @@ public class Enemy : EntityBase {
     }
 
     void OnStatsHPChange(Stats stat, float delta) {
+        if(mUseBossHP)
+            HUD.instance.barBoss.current = Mathf.CeilToInt(stat.curHP);
+
         if(stat.curHP <= 0.0f) {
             state = (int)EntityState.Dead;
         }
@@ -306,9 +356,26 @@ public class Enemy : EntityBase {
         ToRespawnWait();
     }
 
+    IEnumerator DoJump() {
+        WaitForFixedUpdate wait = new WaitForFixedUpdate();
+
+        while(mJumpCurDelay > 0.0f) {
+            yield return wait;
+            mJumpCurDelay -= Time.fixedDeltaTime;
+        }
+
+        mBodyCtrl.Jump(false);
+    }
+
     void DoStun() {
         if(state == (int)EntityState.Stun)
             state = (int)EntityState.Normal;
+    }
+
+    void OnHPBarFilled(UIEnergyBar bar) {
+        Player.instance.Pause(false);
+
+        HUD.instance.barBoss.animateEndCallback -= OnHPBarFilled;
     }
 
     protected virtual void OnDrawGizmosSelected() {

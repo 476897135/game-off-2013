@@ -5,6 +5,12 @@ public enum EntityState {
     Hurt,
     Dead,
     Stun,
-    RespawnWait, //for enemies
-    Lock // specific for player
+
+    //for enemies
+    BossEntry, //boss enters
+    RespawnWait,
+    Jump,
+
+    // specific for player
+    Lock 
 }

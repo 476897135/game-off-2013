@@ -185,17 +185,23 @@ public class Player : EntityBase {
                 Weapon curWpn = weapons[mCurWeaponInd];
                 if(curWpn.stopOnHurt)
                     curWpn.FireStop();
-
-                inputEnabled = false;
-
-                mCtrlSpr.PlayOverrideClip(clipHurt);
-
+                
                 Blink(hurtInvulDelay);
 
-                StartCoroutine(DoHurtForce(mStats.lastDamageNormal));
+                //check to see if we can stop sliding, then do hurt
+                SetSlide(false);
+                if(!mSliding) {
+                    inputEnabled = false;
+
+                    mCtrlSpr.PlayOverrideClip(clipHurt);
+
+                    StartCoroutine(DoHurtForce(mStats.lastDamageNormal));
+                }
                 break;
 
             case EntityState.Dead: {
+                    SetSlide(false);
+                    
                     mCtrl.enabled = false;
                     rigidbody.isKinematic = true;
                     rigidbody.detectCollisions = false;
@@ -222,6 +228,8 @@ public class Player : EntityBase {
                 break;
 
             case EntityState.Lock: {
+                    SetSlide(false);
+                    
                     //disable all input
                     inputEnabled = false;
 
@@ -520,7 +528,7 @@ public class Player : EntityBase {
         Pause(false);
     }
 
-    void Pause(bool pause) {
+    public void Pause(bool pause) {
         if(pause) {
             mPauseCounter++;
             if(mPauseCounter == 1) {

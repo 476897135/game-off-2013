@@ -46,7 +46,7 @@ public class UIEnergyBar : MonoBehaviour {
             if(mCurNumBar != value) {
                 mCurT = (float)value;
                 mCurNumBar = value;
-                                
+
                 if(mIsAnimate && animateEndCallback != null) {
                     animateEndCallback(this);
                 }
@@ -81,6 +81,8 @@ public class UIEnergyBar : MonoBehaviour {
             }
         }
     }
+
+    public bool isAnimating { get { return mIsAnimate; } }
 
     public void SetIconSprite(string atlasRef) {
         if(icon) {
@@ -127,7 +129,7 @@ public class UIEnergyBar : MonoBehaviour {
             panelTop.transform.localPosition = topPos;
         }
     }
-        
+
     void Update() {
         if(mIsAnimate) {
             float dt = Time.realtimeSinceStartup - mLastAnimTime;
