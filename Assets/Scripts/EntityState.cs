@@ -9,8 +9,8 @@ public enum EntityState {
     //for enemies
     BossEntry, //boss enters
     RespawnWait,
-    Jump,
 
     // specific for player
-    Lock 
+    Lock,
+    Victory
 }

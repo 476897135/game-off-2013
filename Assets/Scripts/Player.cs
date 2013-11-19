@@ -312,7 +312,7 @@ public class Player : EntityBase {
 
         mCtrlSpr = GetComponent<PlatformerSpriteController>();
 
-        mCtrlSpr.overrideClipFinishCallback += OnSpriteCtrlOneTimeClipEnd;
+        mCtrlSpr.clipFinishCallback += OnSpriteCtrlOneTimeClipEnd;
 
         mCapsuleColl = collider as CapsuleCollider;
         mDefaultColliderCenter = mCapsuleColl.center;

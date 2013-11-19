@@ -14,12 +14,12 @@ public class PlatformerSpritePlayOverrideClip : FSMActionComponentBase<Platforme
         if(FsmEvent.IsNullOrEmpty(finishEvent))
             Finish();
         else
-            mComp.overrideClipFinishCallback += FinishCallback;
+            mComp.clipFinishCallback += FinishCallback;
     }
 
     public override void OnExit() {
         if(!FsmEvent.IsNullOrEmpty(finishEvent))
-            mComp.overrideClipFinishCallback -= FinishCallback;
+            mComp.clipFinishCallback -= FinishCallback;
     }
 
     void FinishCallback(PlatformerSpriteController aCtrl, tk2dSpriteAnimationClip aClip) {

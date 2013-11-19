@@ -4,12 +4,15 @@ using System.Collections;
 public class PlatformerSpriteController : MonoBehaviour {
     public delegate void Callback(PlatformerSpriteController ctrl);
     public delegate void CallbackClip(PlatformerSpriteController ctrl, tk2dSpriteAnimationClip clip);
+    public delegate void CallbackClipFrame(PlatformerSpriteController ctrl, tk2dSpriteAnimationClip clip, int frame);
 
     public enum State {
         None,
         Slide,
         Climb
     }
+
+    public bool leftFlip = true;
 
     public tk2dSpriteAnimator anim;
     public PlatformerController controller;
@@ -34,7 +37,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     public ParticleSystem wallStickParticle;
 
     public event Callback flipCallback;
-    public event CallbackClip overrideClipFinishCallback;
+    public event CallbackClip clipFinishCallback;
+    public event CallbackClipFrame clipFrameEventCallback;
 
     //TODO: queue system
 
@@ -82,7 +86,23 @@ public class PlatformerSpriteController : MonoBehaviour {
     private int mAnimLibIndex = -1; //-1 is default
     private bool mAnimVelocitySpeedEnabled;
 
-    public bool isLeft { get { return mIsLeft; } }
+    public tk2dSpriteAnimationClip overrideClip {
+        get { return mOverrideClip; }
+    }
+
+    public bool isLeft { 
+        get { return mIsLeft; }
+        set {
+            if(mIsLeft != value) {
+                mIsLeft = value;
+
+                anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
+
+                if(flipCallback != null)
+                    flipCallback(this);
+            }
+        }
+    }
 
     public State state {
         get { return mState; }
@@ -137,8 +157,8 @@ public class PlatformerSpriteController : MonoBehaviour {
                             mOverrideClip = newClip;
                         }
                         else {
-                            if(mOverrideClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.Once && overrideClipFinishCallback != null) {
-                                overrideClipFinishCallback(this, mOverrideClip);
+                            if(mOverrideClip.wrapMode == tk2dSpriteAnimationClip.WrapMode.Once && clipFinishCallback != null) {
+                                clipFinishCallback(this, mOverrideClip);
                             }
 
                             mOverrideClip = null;
@@ -185,7 +205,8 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     void OnDestroy() {
         flipCallback = null;
-        overrideClipFinishCallback = null;
+        clipFinishCallback = null;
+        clipFrameEventCallback = null;
     }
 
     void Awake() {
@@ -193,6 +214,7 @@ public class PlatformerSpriteController : MonoBehaviour {
             anim = GetComponent<tk2dSpriteAnimator>();
 
         anim.AnimationCompleted += OnAnimationComplete;
+        anim.AnimationEventTriggered += OnAnimationFrameEvent;
 
         mDefaultAnimLib = anim.Library;
         mDefaultClipDat = new ClipData(this, mDefaultAnimLib);
@@ -294,23 +316,22 @@ public class PlatformerSpriteController : MonoBehaviour {
                 break;
         }
 
-        if(mIsLeft != left) {
-            mIsLeft = left;
-
-            anim.Sprite.FlipX = mIsLeft;
-
-            if(flipCallback != null)
-                flipCallback(this);
-        }
+        isLeft = left;
     }
 
     void OnAnimationComplete(tk2dSpriteAnimator _anim, tk2dSpriteAnimationClip _clip) {
         if(_clip == mOverrideClip) {
             mOverrideClip = null;
 
-            if(overrideClipFinishCallback != null) {
-                overrideClipFinishCallback(this, _clip);
+            if(clipFinishCallback != null) {
+                clipFinishCallback(this, _clip);
             }
         }
+    }
+
+    void OnAnimationFrameEvent(tk2dSpriteAnimator _anim, tk2dSpriteAnimationClip _clip, int _frame) {
+
+        if(clipFrameEventCallback != null)
+            clipFrameEventCallback(this, _clip, _frame);
     }
 }

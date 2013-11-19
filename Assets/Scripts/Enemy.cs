@@ -32,21 +32,29 @@ public class Enemy : EntityBase {
 
     private GravityController mGravCtrl;
     private PlatformerController mBodyCtrl;
+    private PlatformerSpriteController mBodySpriteCtrl;
     private float mDefaultDeactiveDelay;
 
     private Damage[] mDamageTriggers;
-
-    private float mJumpCurDelay; //set to > 0 to jump
 
     private bool mUseBossHP;
 
     public Stats stats { get { return mStats; } }
     public PlatformerController bodyCtrl { get { return mBodyCtrl; } }
     public GravityController gravityCtrl { get { return mGravCtrl; } }
+    public PlatformerSpriteController bodySpriteCtrl { get { return mBodySpriteCtrl; } }
 
     public void Jump(float delay) {
-        mJumpCurDelay = delay;
-        state = (int)EntityState.Jump;
+        if(mBodyCtrl) {
+            CancelInvoke(JumpFinishKey);
+
+            if(delay > 0) {
+                mBodyCtrl.Jump(true);
+                Invoke(JumpFinishKey, delay);
+            }
+            else
+                mBodyCtrl.Jump(false);
+        }
     }
 
     public void BossHPEnable() {
@@ -94,8 +102,8 @@ public class Enemy : EntityBase {
 
     protected override void StateChanged() {
         switch((EntityState)prevState) {
-            case EntityState.Jump:
-                mJumpCurDelay = 0.0f;
+            case EntityState.Normal:
+                Jump(0.0f);
                 break;
 
             case EntityState.Stun:
@@ -147,11 +155,6 @@ public class Enemy : EntityBase {
                 Invoke("DoStun", stunDelay);
                 break;
 
-            case EntityState.Jump:
-                //assumes mJumpCurDelay has been set
-                mBodyCtrl.Jump(true);
-                break;
-
             case EntityState.RespawnWait:
                 //Debug.Log("respawn wait");
                 RevertTransform();
@@ -186,7 +189,8 @@ public class Enemy : EntityBase {
             case EntityState.Normal:
             case EntityState.Hurt:
             case EntityState.Stun:
-            case EntityState.Jump:
+                Jump(0.0f);
+
                 if(respawnOnSleep) {
                     SetPhysicsActive(false, false);
 
@@ -237,6 +241,8 @@ public class Enemy : EntityBase {
             mBodyCtrl.moveSideLock = true;
 
         mGravCtrl = GetComponent<GravityController>();
+
+        mBodySpriteCtrl = GetComponent<PlatformerSpriteController>();
 
         mDamageTriggers = GetComponentsInChildren<Damage>(true);
 
@@ -318,11 +324,11 @@ public class Enemy : EntityBase {
         if(mBodyCtrl)
             mBodyCtrl.enabled = true;
 
+        Jump(0.0f);
+
         if(stunGO)
             stunGO.SetActive(false);
-
-        mJumpCurDelay = 0.0f;
-
+                
         StopCoroutine(DoRespawnWaitDelayKey);
     }
 
@@ -356,14 +362,8 @@ public class Enemy : EntityBase {
         ToRespawnWait();
     }
 
-    IEnumerator DoJump() {
-        WaitForFixedUpdate wait = new WaitForFixedUpdate();
-
-        while(mJumpCurDelay > 0.0f) {
-            yield return wait;
-            mJumpCurDelay -= Time.fixedDeltaTime;
-        }
-
+    private const string JumpFinishKey = "JumpFinish";
+    void JumpFinish() {
         mBodyCtrl.Jump(false);
     }
 

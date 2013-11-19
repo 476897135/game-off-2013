@@ -464,8 +464,10 @@ public class PlatformerController : RigidBodyController {
                 //mJumpingWall = false;
                 mJumpCounter = 0;
 
-                if(landCallback != null)
-                    landCallback(this);
+                if(localVelocity.y <= 0.0f) {
+                    if(landCallback != null)
+                        landCallback(this);
+                }
             }
             else {
                 //falling down?
