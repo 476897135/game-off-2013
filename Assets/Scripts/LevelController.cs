@@ -4,6 +4,16 @@ using System.Collections;
 public class LevelController : MonoBehaviour {
     private static bool mCheckpointActive = false;
     private static Vector3 mCheckpoint;
+    private static string mLevelLoaded;
+
+    /// <summary>
+    /// Get the level that was loaded from stage
+    /// </summary>
+    public static string levelLoaded {
+        get {
+            return mLevelLoaded;
+        }
+    }
 
     public static void CheckpointApplyTo(Transform target) {
         if(mCheckpointActive) {
@@ -18,5 +28,13 @@ public class LevelController : MonoBehaviour {
 
     public static void CheckpointReset() {
         mCheckpointActive = false;
+    }
+
+    public static void Complete() {
+        SceneState.instance.SetGlobalValue(mLevelLoaded, 1, true);
+    }
+
+    void Awake() {
+        mLevelLoaded = Application.loadedLevelName;
     }
 }

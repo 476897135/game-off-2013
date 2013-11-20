@@ -51,7 +51,7 @@ public class Player : EntityBase {
     public int currentWeaponIndex {
         get { return mCurWeaponInd; }
         set {
-            if(mCurWeaponInd != value && Weapon.IsAvailable(value) && weapons[value] != null) {
+            if(mCurWeaponInd != value && (value == -1 || (Weapon.IsAvailable(value) && weapons[value] != null))) {
                 int prevWeaponInd = mCurWeaponInd;
                 mCurWeaponInd = value;
 
@@ -62,26 +62,32 @@ public class Player : EntityBase {
                 }
 
                 //enable new one
-                Weapon weapon = weapons[mCurWeaponInd];
+                if(mCurWeaponInd >= 0) {
+                    Weapon weapon = weapons[mCurWeaponInd];
 
-                //show energy thing
-                HUD hud = HUD.instance;
+                    //show energy thing
+                    HUD hud = HUD.instance;
 
-                if(weapon.energyType != Weapon.EnergyType.Unlimited) {
-                    hud.barEnergy.gameObject.SetActive(true);
+                    if(weapon.energyType != Weapon.EnergyType.Unlimited) {
+                        hud.barEnergy.gameObject.SetActive(true);
 
-                    hud.barEnergy.SetBarColor(weapon.color);
-                    hud.barEnergy.SetIconSprite(weapon.iconSpriteRef);
-                    hud.barEnergy.max = Mathf.CeilToInt(Weapon.weaponEnergyDefaultMax);
-                    hud.barEnergy.current = Mathf.CeilToInt(weapon.currentEnergy);
+                        hud.barEnergy.SetBarColor(weapon.color);
+                        hud.barEnergy.SetIconSprite(weapon.iconSpriteRef);
+                        hud.barEnergy.max = Mathf.CeilToInt(Weapon.weaponEnergyDefaultMax);
+                        hud.barEnergy.current = Mathf.CeilToInt(weapon.currentEnergy);
+                    }
+                    else {
+                        hud.barEnergy.gameObject.SetActive(false);
+                    }
+
+                    mCtrlSpr.animLibIndex = weapon.playerAnimIndex;
+
+                    weapon.gameObject.SetActive(true);
                 }
                 else {
-                    hud.barEnergy.gameObject.SetActive(false);
+                    mCtrlSpr.animLibIndex = -1;
+                    HUD.instance.barEnergy.gameObject.SetActive(false);
                 }
-
-                mCtrlSpr.animLibIndex = weapon.playerAnimIndex;
-
-                weapon.gameObject.SetActive(true);
             }
         }
     }
@@ -200,6 +206,9 @@ public class Player : EntityBase {
                 break;
 
             case EntityState.Dead: {
+                    if(mCurWeaponInd >= 0)
+                        weapons[mCurWeaponInd].FireStop();
+
                     SetSlide(false);
                     
                     mCtrl.enabled = false;
@@ -227,30 +236,41 @@ public class Player : EntityBase {
                 }
                 break;
 
-            case EntityState.Lock: {
-                    SetSlide(false);
-                    
-                    //disable all input
-                    inputEnabled = false;
+            case EntityState.Lock:
+                LockControls();
+                break;
 
-                    InputManager input = Main.instance != null ? Main.instance.input : null;
-                    if(input) {
-                        input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
-                    }
-                    //
+            case EntityState.Victory:
+                currentWeaponIndex = -1;
+                LockControls();
+                mCtrlSpr.PlayOverrideClip("victory");
 
-                    mStats.isInvul = true;
-
-                    mCtrl.moveSideLock = true;
-                    mCtrl.moveSide = 0.0f;
-                    mCtrl.ResetCollision();
-                }
+                LevelController.Complete();
                 break;
 
             case EntityState.Invalid:
                 inputEnabled = false;
                 break;
         }
+    }
+
+    void LockControls() {
+        SetSlide(false);
+
+        //disable all input
+        inputEnabled = false;
+
+        InputManager input = Main.instance != null ? Main.instance.input : null;
+        if(input) {
+            input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
+        }
+        //
+
+        mStats.isInvul = true;
+
+        mCtrl.moveSideLock = true;
+        mCtrl.moveSide = 0.0f;
+        mCtrl.ResetCollision();
     }
 
     protected override void SetBlink(bool blink) {
@@ -504,6 +524,13 @@ public class Player : EntityBase {
                     mCtrl.Jump(true);
                 }
             }
+            else {
+                //if we can stop sliding, then jump
+                SetSlide(false, false);
+                if(!mSliding) {
+                    mCtrl.Jump(true);
+                }
+            }
         }
         else if(dat.state == InputManager.State.Released) {
             mCtrl.Jump(false);
@@ -549,7 +576,7 @@ public class Player : EntityBase {
         }
     }
 
-    void SetSlide(bool slide) {
+    void SetSlide(bool slide, bool clearVelocity = true) {
         if(mSliding != slide) {
             mSliding = slide;
 
@@ -576,8 +603,19 @@ public class Player : EntityBase {
                     mCtrl.moveMaxSpeed = mDefaultCtrlMoveMaxSpeed;
                     mCtrl.moveSideLock = false;
                     mCtrl.moveForce = mDefaultCtrlMoveForce;
-                    mCtrl.moveSide = 0.0f;
-                    rigidbody.velocity = Vector3.zero;
+
+                    if(clearVelocity) {
+                        mCtrl.moveSide = 0.0f;
+                        rigidbody.velocity = Vector3.zero;
+                    }
+                    else {
+                        //limit x velocity
+                        Vector3 v = rigidbody.velocity;
+                        if(Mathf.Abs(v.x) > 12.0f) {
+                            v.x = Mathf.Sign(v.x) * 12.0f;
+                            rigidbody.velocity = v;
+                        }
+                    }
 
                     mCtrlSpr.state = PlatformerSpriteController.State.None;
 

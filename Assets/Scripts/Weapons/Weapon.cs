@@ -98,7 +98,11 @@ public class Weapon : MonoBehaviour {
     private float mCurEnergy;
 
     public static bool IsAvailable(int index) {
-        return true;//SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
+        return true;//index == 0 ? true : SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
+    }
+
+    public static void UnlockWeapon(int index) {
+        SceneState.instance.SetGlobalFlag(weaponFlagsKey, index, true, true);
     }
 
     public static string GetWeaponEnergyKey(EnergyType type) {

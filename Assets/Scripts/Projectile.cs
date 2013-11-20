@@ -321,7 +321,7 @@ public class Projectile : EntityBase {
 
     void Die() {
         if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
-            Vector2 p = explodeOnDeath ? transform.localToWorldMatrix.MultiplyPoint(explodeOfs) : transform.position;
+            Vector2 p = transform.localToWorldMatrix.MultiplyPoint(explodeOfs);//explodeOnDeath ? transform.localToWorldMatrix.MultiplyPoint(explodeOfs) : transform.position;
 
             PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, p, Quaternion.identity);
         }
@@ -410,7 +410,7 @@ public class Projectile : EntityBase {
     }
 
     void ApplyDamage(GameObject go, Vector3 pos, Vector3 normal) {
-        if(!explodeOnDeath && CheckTag(go.tag)) {
+        if(mDamage && !explodeOnDeath && CheckTag(go.tag)) {
             mDamage.CallDamageTo(go, pos, normal);
         }
     }
@@ -423,7 +423,7 @@ public class Projectile : EntityBase {
     }
 
     void OnCollisionStay(Collision collision) {
-        if(state != (int)State.Invalid) {
+        if(state != (int)State.Invalid && mDamage) {
             //do damage
             foreach(ContactPoint cp in collision.contacts) {
                 ApplyDamage(cp.otherCollider.gameObject, cp.point, cp.normal);

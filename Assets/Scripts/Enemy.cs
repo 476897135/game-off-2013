@@ -12,16 +12,20 @@ public class Enemy : EntityBase {
     public bool toRespawnAuto = true; //if true, wait for a delay during death to wait for respawn
     public float toRespawnDelay = 0.0f;
 
+    public bool disablePhysicsOnDeath = true;
     public bool releaseOnDeath = false;
 
     public AnimatorData animator; //if this enemy is controlled by an animator (usu. as parent)
     public GameObject visibleGO; //the game object to deactivate while dead/respawning
     public GameObject stunGO;
 
+    public GameObject deathActivateGO;
     public string deathSpawnGroup; //upon death, spawn this
     public string deathSpawnType;
     public Transform deathSpawnAttach;
     public Vector3 deathSpawnOfs;
+
+    public int weaponIndexUnlock = -1; //for bosses, acquire this weapon upon defeat
 
     private Stats mStats;
     private bool mRespawnReady;
@@ -125,7 +129,11 @@ public class Enemy : EntityBase {
 
         switch((EntityState)state) {
             case EntityState.Dead:
-                SetPhysicsActive(false, false);
+                if(weaponIndexUnlock != -1)
+                    Weapon.UnlockWeapon(weaponIndexUnlock);
+
+                if(disablePhysicsOnDeath)
+                    SetPhysicsActive(false, false);
 
                 Blink(0.0f);
                 mStats.isInvul = true;
@@ -137,6 +145,10 @@ public class Enemy : EntityBase {
                     PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null,
                         (deathSpawnAttach ? deathSpawnAttach : transform).localToWorldMatrix.MultiplyPoint(deathSpawnOfs),
                         Quaternion.identity);
+                }
+
+                if(deathActivateGO) {
+                    deathActivateGO.SetActive(true);
                 }
 
                 if(toRespawnAuto) {
@@ -254,6 +266,9 @@ public class Enemy : EntityBase {
 
         if(activator)
             mDefaultDeactiveDelay = activator.deactivateDelay;
+
+        if(deathActivateGO)
+            deathActivateGO.SetActive(false);
 
         //initialize variables
     }

@@ -24,12 +24,19 @@ public class ItemPickup : EntityBase {
     /// </summary>
     public void PickUp(Player player) {
         if(player && player.state != (int)EntityState.Dead && player.state != (int)EntityState.Invalid && gameObject.activeInHierarchy) {
+            float val = value;
+
             switch(type) {
                 case ItemType.Health:
-                    if(player.stats.curHP < player.stats.maxHP)
-                        player.stats.curHP += value;
+                    if(player.stats.curHP < player.stats.maxHP) {
+                        if(player.stats.curHP + val > player.stats.maxHP) {
+                            player.stats.subTankEnergyCurrent += (player.stats.curHP + val) - player.stats.maxHP;
+                        }
+
+                        player.stats.curHP += val;
+                    }
                     else {
-                        player.stats.subTankEnergyCurrent += value;
+                        player.stats.subTankEnergyCurrent += val;
 
                         //TODO: play special sound?
                     }
@@ -44,10 +51,14 @@ public class ItemPickup : EntityBase {
                         wpn = player.currentWeapon;
 
                     if(wpn && !wpn.isMaxEnergy) {
-                        wpn.currentEnergy += value;
+                        if(wpn.currentEnergy + val > Weapon.weaponEnergyDefaultMax) {
+                            player.stats.subTankWeaponCurrent += (wpn.currentEnergy + val) - Weapon.weaponEnergyDefaultMax;
+                        }
+
+                        wpn.currentEnergy += val;
                     }
                     else {
-                        player.stats.subTankWeaponCurrent += value;
+                        player.stats.subTankWeaponCurrent += val;
 
                         //TODO: play special sound?
                     }

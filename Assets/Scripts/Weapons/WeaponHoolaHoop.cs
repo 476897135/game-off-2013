@@ -10,7 +10,6 @@ public class WeaponHoolaHoop : Weapon {
 
     public GameObject damageGO;
 
-    private float mDefaultStandDrag;
     private float mDefaultAirForce;
 
     public override void FireStart() {
@@ -25,7 +24,6 @@ public class WeaponHoolaHoop : Weapon {
             player.controller.moveMaxSpeed = speed;
             player.controller.moveForce *= 2.0f;
             player.controller.moveAirForce = player.controller.moveForce;
-            player.controller.standDrag = 0.0f;
 
             Stats.DamageMod dmgReduce = player.stats.GetDamageMod(player.stats.damageTypeReduction, Damage.Type.Contact);
             if(dmgReduce != null)
@@ -48,7 +46,6 @@ public class WeaponHoolaHoop : Weapon {
 
             player.controller.moveMaxSpeed = player.controllerDefaultMaxSpeed;
             player.controller.moveForce = player.controllerDefaultForce;
-            player.controller.standDrag = mDefaultStandDrag;
             player.controller.moveAirForce = mDefaultAirForce;
 
             if(Mathf.Abs(player.controller.localVelocity.x) > player.controller.moveMaxSpeed) {
@@ -70,7 +67,6 @@ public class WeaponHoolaHoop : Weapon {
     }
 
     protected override void Awake() {
-        mDefaultStandDrag = Player.instance.controller.standDrag;
         mDefaultAirForce = Player.instance.controller.moveAirForce;
 
         damageGO.SetActive(false);

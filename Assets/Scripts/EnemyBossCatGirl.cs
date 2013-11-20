@@ -88,7 +88,7 @@ public class EnemyBossCatGirl : Enemy {
         if(mCurPhase == phase)
             return;
 
-        Debug.Log("phase: " + phase);
+        //Debug.Log("phase: " + phase);
 
         //prev
         switch(mCurPhase) {
@@ -269,8 +269,12 @@ public class EnemyBossCatGirl : Enemy {
                 if(mJumpToWallWait) {
                     if(bodyCtrl.isWallStick) {
                         //strike or grenade
-                        if(mPlayer.controller.isGrounded)
-                            ToPhase(Phase.ThrowGrenades);
+                        if(mPlayer.controller.isGrounded) {
+                            if(Random.Range(0, 3) == 0)
+                                ToPhase(Phase.AirStrike);
+                            else
+                                ToPhase(Phase.ThrowGrenades);
+                        }
                         else
                             ToPhase(Phase.AirStrike);
                         /*if(Random.Range(0, 2) == 0)
