@@ -33,7 +33,7 @@ public class EnemySeeker : Enemy {
 
                 //set starting dir
                 Vector3 playerPos = Player.instance.collider.bounds.center;
-                Vector3 dPos = playerPos - collider.bounds.center;
+                Vector3 dPos = playerPos - collider.bounds.center; dPos.z = 0;
                 mDirCur = dPos.normalized;
                 mDirAngle = mDirAngleDest = 0.0f;
                 mDirAngleVel = 0.0f;
@@ -76,18 +76,19 @@ public class EnemySeeker : Enemy {
                 Collider[] cols = Physics.OverlapSphere(pos, seekRadius, seekMask);
                 if(cols.Length > 0) {
                     float nearestDistSqr = Mathf.Infinity;
-                    Vector3 nearestDir = Vector3.up;
+                    Vector3 nearestDPos = Vector3.up;
                     for(int i = 0, max = cols.Length; i < max; i++) {
                         Vector3 colPos = cols[i].bounds.center;
                         Vector3 dpos = colPos - pos;
                         float distSqr = dpos.sqrMagnitude;
                         if(distSqr > 0.0f && distSqr < nearestDistSqr) {
-                            nearestDir = dpos / Mathf.Sqrt(distSqr);
+                            nearestDPos = dpos;
+                            nearestDPos.z = 0;
                         }
                     }
 
-                    mDirAngleDest = Vector3.Angle(mDirCur, nearestDir);
-                    mDirRotAxis = Vector3.Cross(mDirCur, nearestDir);
+                    mDirAngleDest = Vector3.Angle(mDirCur, nearestDPos);
+                    mDirRotAxis = Vector3.Cross(mDirCur, nearestDPos);
                     mDirAngleVel = 0.0f;
                 }
                 break;
