@@ -11,6 +11,8 @@ public class EntityDamageBlinker : MonoBehaviour {
     public string modProperty = "_Mod";
     public bool invulOnBlink = false;
 
+    private const string blinkEndFunc = "DoBlinkEnd";
+
     private Renderer[] mRenderers;
     private Material[] mBlinkMats;
     private bool mBlinkOn;
@@ -39,8 +41,12 @@ public class EntityDamageBlinker : MonoBehaviour {
 
     void OnDisable() {
         if(mStarted) {
-            if(mEnt)
-                OnEntityBlink(mEnt, false);
+            OnEntityBlink(mEnt, false);
+
+            if(!mEnt && IsInvoking(blinkEndFunc))
+                mStats.isInvul = false;
+
+            CancelInvoke();
         }
     }
 
@@ -66,7 +72,8 @@ public class EntityDamageBlinker : MonoBehaviour {
         }
 
         mEnt = GetComponent<EntityBase>();
-        mEnt.setBlinkCallback += OnEntityBlink;
+        if(mEnt)
+            mEnt.setBlinkCallback += OnEntityBlink;
 
         mStats = GetComponent<Stats>();
         if(mStats)
@@ -83,8 +90,15 @@ public class EntityDamageBlinker : MonoBehaviour {
     }
 
     void OnStatsHPChange(Stats stat, float delta) {
-        if(mEnt.gameObject.activeInHierarchy && stat.curHP > 0.0f && delta < 0.0f) {
-            mEnt.Blink(blinkDelay);
+        if(stat.curHP > 0.0f && delta < 0.0f) {
+            if(mEnt) {
+                if(mEnt.gameObject.activeInHierarchy)
+                    mEnt.Blink(blinkDelay);
+            }
+            else {
+                OnEntityBlink(null, true);
+                Invoke(blinkEndFunc, blinkDelay);
+            }
         }
     }
 
@@ -108,6 +122,10 @@ public class EntityDamageBlinker : MonoBehaviour {
         if(invulOnBlink && mStats) {
             mStats.isInvul = b;
         }
+    }
+
+    void DoBlinkEnd() {
+        OnEntityBlink(null, false);
     }
 
     void DoBlinkInterval() {

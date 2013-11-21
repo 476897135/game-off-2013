@@ -30,8 +30,8 @@ public class Enemy : EntityBase {
     private Stats mStats;
     private bool mRespawnReady;
 
-    private Vector3 mSpawnPos;
-    private Quaternion mSpawnRot;
+    protected Vector3 mSpawnPos;
+    protected Quaternion mSpawnRot;
     private bool mSpawnRigidBodyKinematic;
 
     private GravityController mGravCtrl;
@@ -142,9 +142,8 @@ public class Enemy : EntityBase {
                     visibleGO.SetActive(false);
 
                 if(!string.IsNullOrEmpty(deathSpawnGroup) && !string.IsNullOrEmpty(deathSpawnType)) {
-                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null,
-                        (deathSpawnAttach ? deathSpawnAttach : transform).localToWorldMatrix.MultiplyPoint(deathSpawnOfs),
-                        Quaternion.identity);
+                    Vector3 pt = (deathSpawnAttach ? deathSpawnAttach : transform).localToWorldMatrix.MultiplyPoint(deathSpawnOfs); pt.z = 0;
+                    PoolController.Spawn(deathSpawnGroup, deathSpawnType, deathSpawnType, null, pt, Quaternion.identity);
                 }
 
                 if(deathActivateGO) {

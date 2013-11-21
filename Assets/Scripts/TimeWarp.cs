@@ -18,7 +18,7 @@ public class TimeWarp : MonoBehaviour {
         if(mScale != scale) {
             mScale = scale;
 
-            if(scale < 1.0f && target.rigidbody) {
+            if(scale < 1.0f && target.rigidbody && !target.rigidbody.isKinematic) {
                 Vector3 v = target.rigidbody.velocity;
                 float mag = v.magnitude;
                 if(mag > 0.0f) {
