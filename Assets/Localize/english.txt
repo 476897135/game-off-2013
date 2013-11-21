@@ -5,6 +5,47 @@
 	},
 	
 	{
+		"key":"newgame_confirm_title",
+		"text":"NEW GAME"
+	},
+	
+	{
+		"key":"newgame_confirm_desc",
+		"text":"This will delete the previous data, are you sure?"
+	},
+	
+	
+	{
+		"key":"katgirl_name",
+		"text":"CHEA GUERRERA"
+	},
+	{
+		"key":"lightninggirl_name",
+		"text":"TOTALLY LIGHTNING"
+	},
+	{
+		"key":"tankgirl_name",
+		"text":"TANK GIRL"
+	},
+	{
+		"key":"clonegirl_name",
+		"text":"CLONE ME"
+	},
+	{
+		"key":"hipgirl_name",
+		"text":"HIPSTER BITCH"
+	},
+	{
+		"key":"valleygirl_name",
+		"text":"VALLEY GIRL"
+	},
+	{
+		"key":"sarkee_name",
+		"text":"SARKEE"
+	}
+	
+	
+	{
 		"key":"stargazer",
 		"text":"STAR GAZER"
 	},

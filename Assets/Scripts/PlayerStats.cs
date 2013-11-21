@@ -5,6 +5,7 @@ using System.Collections;
 /// Player specific stats
 /// </summary>
 public class PlayerStats : Stats {
+    public const string gameExistKey = "s";
     public const string hpModFlagsKey = "playerHPMod";
     public const int hpModCount = 8;
     public const float hpMod = 2;
@@ -23,9 +24,9 @@ public class PlayerStats : Stats {
     public const int stateArmor = 5;
 
     public const string lifeCountKey = "playerLife";
-        
+
     public const string itemFlagsKey = "playerItems"; //for sub tanks, armor, etc.
-        
+
     public event ChangeCallback changeMaxHPCallback;
 
     private float mDefaultMaxHP;
@@ -35,7 +36,17 @@ public class PlayerStats : Stats {
 
     private float mSubTankWeaponCur;
     private float mSubTankWeaponMax;
-        
+
+    public static bool isGameExists {
+        get {
+            return SceneState.instance.GetGlobalValue(gameExistKey) == 1;
+        }
+
+        set {
+            SceneState.instance.SetGlobalValue(gameExistKey, value ? 1 : 0, true);
+        }
+    }
+
     public static int curLife {
         get {
             return SceneState.instance.GetGlobalValue(lifeCountKey, defaultNumLives);
@@ -75,8 +86,8 @@ public class PlayerStats : Stats {
             return SceneState.instance.CheckGlobalFlag(itemFlagsKey, stateSubTankWeapon2);
         }
     }
-       
-    
+
+
     public static void AddHPMod(int bit) {
         SceneState.instance.SetGlobalFlag(hpModFlagsKey, bit, true, true);
     }
@@ -133,14 +144,14 @@ public class PlayerStats : Stats {
 
     public void AcquireArmor() {
         SceneState.instance.SetGlobalFlag(itemFlagsKey, stateArmor, true, true);
-        damageReduction = 0.5f;    
+        damageReduction = 0.5f;
     }
-            
+
     public void SaveStates() {
         SceneState.instance.SetGlobalValueFloat(subTankEnergyFillKey, mSubTankEnergyCur, true);
         SceneState.instance.SetGlobalValueFloat(subTankWeaponFillKey, mSubTankWeaponCur, true);
     }
-                
+
     protected override void OnDestroy() {
         if(SceneState.instance) {
             SceneState.instance.onValueChange -= OnSceneStateValue;
@@ -198,7 +209,7 @@ public class PlayerStats : Stats {
             maxHP = newMaxHP;
 
             float delta = maxHP - prevMaxHP;
-                                    
+
             if(changeMaxHPCallback != null) {
                 changeMaxHPCallback(this, delta);
             }

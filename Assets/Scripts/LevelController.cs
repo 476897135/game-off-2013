@@ -15,6 +15,10 @@ public class LevelController : MonoBehaviour {
         }
     }
 
+    public static bool isLevelComplete(string level) {
+        return SceneState.instance.GetGlobalValue(level) == 1;
+    }
+
     public static void CheckpointApplyTo(Transform target) {
         if(mCheckpointActive) {
             target.position = mCheckpoint;
