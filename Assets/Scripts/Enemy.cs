@@ -88,9 +88,6 @@ public class Enemy : EntityBase {
         //reset stuff here
         state = (int)EntityState.Invalid;
 
-        if(animator)
-            animator.Stop();
-
         Restart();
 
         mRespawnReady = false;
@@ -151,7 +148,10 @@ public class Enemy : EntityBase {
                 }
 
                 if(toRespawnAuto) {
-                    StartCoroutine(DoRespawnWaitDelayKey);
+                    if(gameObject.activeSelf)
+                        StartCoroutine(DoRespawnWaitDelayKey);
+                    else
+                        ToRespawnWait();
                 }
                 else if(releaseOnDeath)
                     Release();
@@ -322,6 +322,9 @@ public class Enemy : EntityBase {
     protected virtual void Restart() {
         //reset physics
         SetPhysicsActive(true, false);
+
+        if(animator)
+            animator.Stop();
 
         if(visibleGO)
             visibleGO.SetActive(true);

@@ -2,36 +2,29 @@
 using System.Collections;
 
 public class EnemyCatchy : Enemy {
-    public enum Axis {
-        X,
-        Y
-    }
-
-    public Axis axis = Axis.X;
-
     public GameObject[] buddies;
-
     public GameObject projectile;
     public float projectileSpeed;
     public float projectileRestDelay;
-
     public Transform[] projWP;
 
-    public Transform dest;
-    public float speed;
-    public float speedChase; //when player is in the way
+    public float chaseTimeScale = 1.5f;
+    public float chaseCheckLength = 10.0f;
+    public LayerMask chaseCheckMask;
 
     private Stats[] mBuddyStats;
     private tk2dSpriteAnimator[] mBuddyAnims;
     private TimeWarp[] mBuddyTimeWarps;
 
-    private float mCurDest;
-    private float mDest;
-    private float mStart;
+    private int mCurProjInd = 0;
     private int mCurProjDestInd = 0;
     private float mLastProjTime = 0;
-    private int mNumDead = 0;
 
+    private float mProjMoveDelay; //compute from projectileSpeed and distance
+    private Vector3[] mProjWPLocals;
+
+    private float mProjMoveCurTime;
+    private int mNumDead = 0;
     private string mDeathSpawnType;
 
     protected override void StateChanged() {
@@ -40,14 +33,22 @@ public class EnemyCatchy : Enemy {
         switch((EntityState)state) {
             case EntityState.Stun:
                 projectile.SetActive(false);
-                Vector3 projPos = projWP[0].position; projPos.z = 0;
-                projectile.transform.position = projPos;
+
+                Vector3 p = projWP[0].position; p.z = 0;
+                projectile.transform.position = p;
+                mCurProjInd = 0;
                 mCurProjDestInd = 1;
                 break;
 
             case EntityState.Normal:
                 mLastProjTime = Time.fixedTime;
                 projectile.SetActive(mNumDead == 0);
+
+                if(animator && !animator.isPlaying)
+                    animator.Play("move");
+                break;
+
+            case EntityState.RespawnWait:
                 break;
         }
     }
@@ -63,11 +64,12 @@ public class EnemyCatchy : Enemy {
 
         mNumDead = 0;
 
-        Vector3 projPos = projWP[0].position; projPos.z = 0;
-        projectile.transform.position = projPos;
-
-        mCurDest = mDest;
+        Vector3 p = projWP[0].position; p.z = 0;
+        projectile.transform.position = p;
+        mCurProjInd = 0;
         mCurProjDestInd = 1;
+
+        mProjMoveCurTime = 0.0f;
     }
 
     public override void SpawnFinish() {
@@ -76,22 +78,12 @@ public class EnemyCatchy : Enemy {
         for(int i = 0; i < mBuddyAnims.Length; i++) {
             mBuddyAnims[i].Play("normal");
         }
+
+        mProjMoveCurTime = 0.0f;
     }
 
     protected override void Awake() {
         base.Awake();
-
-        switch(axis) {
-            case Axis.X:
-                mDest = dest.position.x;
-                mStart = transform.position.x;
-                break;
-
-            case Axis.Y:
-                mDest = dest.position.y;
-                mStart = transform.position.y;
-                break;
-        }
 
         mBuddyStats = new Stats[buddies.Length];
         mBuddyAnims = new tk2dSpriteAnimator[buddies.Length];
@@ -107,10 +99,20 @@ public class EnemyCatchy : Enemy {
         mDeathSpawnType = deathSpawnType;
         deathSpawnType = "";
 
-        Vector3 projPos = projWP[0].position; projPos.z = 0;
-        projectile.transform.position = projPos;
+        mProjWPLocals = new Vector3[projWP.Length];
+        for(int i = 0; i < mProjWPLocals.Length; i++) {
+            mProjWPLocals[i] = transform.worldToLocalMatrix.MultiplyPoint(projWP[i].position);
+            mProjWPLocals[i].z = 0.0f;
+        }
 
-        mCurDest = mDest;
+        Vector3 p1 = projWP[0].position; p1.z = 0;
+        Vector3 p2 = projWP[1].position; p2.z = 0;
+
+        float projDist = (p2 - p1).magnitude;
+        mProjMoveDelay = projDist/projectileSpeed;
+
+        projectile.transform.position = p1;
+        mCurProjInd = 0;
         mCurProjDestInd = 1;
     }
 
@@ -133,7 +135,8 @@ public class EnemyCatchy : Enemy {
 
         if(deadInd != -1) {
             buddies[deadInd].SetActive(false);
-            Vector3 pt = buddies[deadInd].collider.bounds.center; pt.z = 0.0f;
+            Vector3 pt = buddies[deadInd].collider.bounds.center;
+            pt.z = 0.0f;
             PoolController.Spawn(deathSpawnGroup, mDeathSpawnType, mDeathSpawnType, null, pt, Quaternion.identity);
         }
 
@@ -165,96 +168,53 @@ public class EnemyCatchy : Enemy {
                         timeScale = mBuddyTimeWarps[i].scale;
                 }
 
-                Bounds playerBounds = Player.instance.collider.bounds;
+                if(animator) {
+                    float animTimeScale = 1.0f;
 
-                float curVal = 0;
-                float curProjVal = 0, projDest = 0;
+                    RaycastHit hit;
 
-                float curSpeed = speed;
-
-                switch(axis) {
-                    case Axis.X:
-                        curVal = transform.position.x;
-                        curProjVal = projectile.transform.position.y;
-                        projDest = projWP[mCurProjDestInd].position.y;
-
-                        //check player range
-                        for(int i = 0; i < buddies.Length; i++) {
-                            Bounds b = buddies[i].collider.bounds;
-                            if(!(playerBounds.max.y < b.min.y || playerBounds.min.y > b.max.y)) {
-                                curSpeed = speedChase;
+                    for(int i = 0; i < buddies.Length; i++) {
+                        Vector3 r = buddies[i].transform.right;
+                        Vector3 pos = buddies[i].collider.bounds.center; pos.z = 0.0f;
+                        if(Physics.Raycast(pos, r, out hit, chaseCheckLength, chaseCheckMask)) {
+                            if(hit.collider.CompareTag("Player")) {
+                                animTimeScale = chaseTimeScale;
                                 break;
                             }
                         }
-                        break;
-
-                    case Axis.Y:
-                        curVal = transform.position.y;
-                        curProjVal = projectile.transform.position.x;
-                        projDest = projWP[mCurProjDestInd].position.x;
-
-                        //check player range
-                        for(int i = 0; i < buddies.Length; i++) {
-                            Bounds b = buddies[i].collider.bounds;
-                            if(!(playerBounds.max.x < b.min.x || playerBounds.min.x > b.max.x)) {
-                                curSpeed = speedChase;
+                        else if(Physics.Raycast(pos, -r, out hit, chaseCheckLength, chaseCheckMask)) {
+                            if(hit.collider.CompareTag("Player")) {
+                                animTimeScale = chaseTimeScale;
                                 break;
                             }
                         }
-                        break;
+                    }
+
+                    animator.animScale = animTimeScale * timeScale;
                 }
-
-                //move
-                float dval = mCurDest - curVal;
-                float dirVal = Mathf.Sign(dval);
-
-                float nval = curVal + (dirVal * curSpeed * Time.fixedDeltaTime * timeScale);
-
-                //capped? then set to new dest for later
-                if((dirVal < 0.0f && nval < mCurDest) || (dirVal > 0.0f && nval > mCurDest)) {
-                    nval = mCurDest;
-
-                    if(mCurDest == mDest) mCurDest = mStart;
-                    else mCurDest = mDest;
-                }
-
-                Vector3 pos = transform.position;
-                switch(axis) {
-                    case Axis.X:
-                        pos.x = nval;
-                        break;
-                    case Axis.Y:
-                        pos.y = nval;
-                        break;
-                }
-                transform.position = pos;
 
                 /////////////////////////////
                 //projectile move
                 if(mNumDead == 0 && (Time.fixedTime - mLastProjTime) * timeScale > projectileRestDelay) {
-                    dval = projDest - curProjVal;
-                    dirVal = Mathf.Sign(dval);
+                    mProjMoveCurTime += Time.fixedDeltaTime * timeScale;
 
-                    nval = curProjVal + (dirVal * projectileSpeed * Time.fixedDeltaTime * timeScale);
+                    if(mProjMoveCurTime >= mProjMoveDelay) {
+                        Vector3 p = projWP[mCurProjDestInd].position; p.z = 0.0f;
+                        projectile.transform.position = p;
 
-                    //capped? then set to new dest for later
-                    if((dirVal < 0.0f && nval < projDest) || (dirVal > 0.0f && nval > projDest)) {
-                        nval = projDest;
+                        mCurProjInd = mCurProjDestInd;
+                        mCurProjDestInd++;
+                        if(mCurProjDestInd == projWP.Length)
+                            mCurProjDestInd = 0;
 
-                        mCurProjDestInd++; if(mCurProjDestInd == projWP.Length) mCurProjDestInd = 0;
                         mLastProjTime = Time.fixedTime;
+                        mProjMoveCurTime = 0.0f;
                     }
+                    else {
+                        float t = Holoville.HOTween.Core.Easing.Sine.EaseInOut(mProjMoveCurTime, 0.0f, 1.0f, mProjMoveDelay, 0.0f, 0.0f);
 
-                    pos = projectile.transform.position;
-                    switch(axis) {
-                        case Axis.X:
-                            pos.y = nval;
-                            break;
-                        case Axis.Y:
-                            pos.x = nval;
-                            break;
+                        projectile.transform.position = transform.localToWorldMatrix.MultiplyPoint(Vector3.Lerp(mProjWPLocals[mCurProjInd], mProjWPLocals[mCurProjDestInd], t));
                     }
-                    projectile.transform.position = pos;
                 }
                 break;
         }

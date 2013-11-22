@@ -13,7 +13,6 @@ public class EnemyCatRoller : Enemy {
     private EntitySensor mSensor;
     private Projectile mRock;
     private PlatformerController mRockCtrl;
-    private PlatformerSpriteController mSpriteCtrl;
 
     protected override void StateChanged() {
         base.StateChanged();
@@ -27,7 +26,7 @@ public class EnemyCatRoller : Enemy {
 
                     mRockCtrl = mRock.GetComponent<PlatformerController>();
 
-                    mSpriteCtrl.controller = mRockCtrl;
+                    bodySpriteCtrl.controller = mRockCtrl;
                 }
 
                 mRockCtrl.dirHolder = transform;
@@ -57,7 +56,7 @@ public class EnemyCatRoller : Enemy {
                     mSensor.Activate(false);
                 }
 
-                mSpriteCtrl.controller = null;
+                bodySpriteCtrl.controller = null;
                 break;
 
             case EntityState.RespawnWait:
@@ -70,7 +69,7 @@ public class EnemyCatRoller : Enemy {
                     mSensor.Activate(false);
                 }
 
-                mSpriteCtrl.controller = null;
+                bodySpriteCtrl.controller = null;
 
                 RevertTransform();
                 break;
@@ -83,8 +82,6 @@ public class EnemyCatRoller : Enemy {
         mSensor = GetComponent<EntitySensor>();
         if(mSensor)
             mSensor.updateCallback += OnSensorUpdate;
-
-        mSpriteCtrl = GetComponent<PlatformerSpriteController>();
     }
 
     void FixedUpdate() {
@@ -94,7 +91,7 @@ public class EnemyCatRoller : Enemy {
             case EntityState.Hurt:
             case EntityState.Normal:
                 if(mSensor)
-                    mSensor.hFlip = mSpriteCtrl.isLeft;
+                    mSensor.hFlip = bodySpriteCtrl.isLeft;
 
                 if(mRock.state == (int)Projectile.State.Dying) {
                     mRock = null;

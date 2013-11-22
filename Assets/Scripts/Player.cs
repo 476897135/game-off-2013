@@ -3,47 +3,32 @@ using System.Collections;
 
 public class Player : EntityBase {
     public const string clipHurt = "hurt";
-
     public float hurtForce = 15.0f;
     public float hurtInvulDelay = 0.5f;
-
     public float deathFinishDelay = 2.0f;
-
     public float slideForce;
     public float slideSpeedMax;
     public float slideDelay;
     public float slideHeight = 0.79f;
-
     public GameObject deathGOActivate;
-
     public LayerMask solidMask; //use for standing up, etc.
 
     public Weapon[] weapons;
-
     private static Player mInstance;
-
     private PlayerStats mStats;
-
     private PlatformerController mCtrl;
     private PlatformerSpriteController mCtrlSpr;
-
     private SpriteColorBlink[] mBlinks;
-
     private float mDefaultCtrlMoveForce;
     private float mDefaultCtrlMoveMaxSpeed;
     private Vector3 mDefaultColliderCenter;
     private float mDefaultColliderHeight;
-
     private CapsuleCollider mCapsuleColl;
-
     private bool mInputEnabled;
     private bool mSliding;
     private float mSlidingLastTime;
-
     private bool mHurtActive;
-
     private int mCurWeaponInd = -1;
-
     private int mPauseCounter;
 
     public static Player instance { get { return mInstance; } }
@@ -75,16 +60,14 @@ public class Player : EntityBase {
                         hud.barEnergy.SetIconSprite(weapon.iconSpriteRef);
                         hud.barEnergy.max = Mathf.CeilToInt(Weapon.weaponEnergyDefaultMax);
                         hud.barEnergy.current = Mathf.CeilToInt(weapon.currentEnergy);
-                    }
-                    else {
+                    } else {
                         hud.barEnergy.gameObject.SetActive(false);
                     }
 
                     mCtrlSpr.animLibIndex = weapon.playerAnimIndex;
 
                     weapon.gameObject.SetActive(true);
-                }
-                else {
+                } else {
                     mCtrlSpr.animLibIndex = -1;
                     HUD.instance.barEnergy.gameObject.SetActive(false);
                 }
@@ -112,8 +95,7 @@ public class Player : EntityBase {
                     if(lowestWpn) {
                         if(wpn.currentEnergy < lowestWpn.currentEnergy)
                             lowestWpn = wpn;
-                    }
-                    else
+                    } else
                         lowestWpn = wpn;
                 }
             }
@@ -143,8 +125,7 @@ public class Player : EntityBase {
                         input.AddButtonCall(0, InputAction.PowerNext, OnInputPowerNext);
                         input.AddButtonCall(0, InputAction.PowerPrev, OnInputPowerPrev);
                         input.AddButtonCall(0, InputAction.Jump, OnInputJump);
-                    }
-                    else {
+                    } else {
                         input.RemoveButtonCall(0, InputAction.Fire, OnInputFire);
                         input.RemoveButtonCall(0, InputAction.PowerNext, OnInputPowerNext);
                         input.RemoveButtonCall(0, InputAction.PowerPrev, OnInputPowerPrev);
@@ -158,6 +139,7 @@ public class Player : EntityBase {
     }
 
     public PlatformerController controller { get { return mCtrl; } }
+
     public PlatformerSpriteController controllerSprite { get { return mCtrlSpr; } }
 
     public PlayerStats stats { get { return mStats; } }
@@ -188,9 +170,11 @@ public class Player : EntityBase {
                 break;
 
             case EntityState.Hurt:
-                Weapon curWpn = weapons[mCurWeaponInd];
-                if(curWpn.stopOnHurt)
-                    curWpn.FireStop();
+                if(mCurWeaponInd >= 0) {
+                    Weapon curWpn = weapons[mCurWeaponInd];
+                    if(curWpn.stopOnHurt)
+                        curWpn.FireStop();
+                }
                 
                 Blink(hurtInvulDelay);
 
@@ -205,7 +189,8 @@ public class Player : EntityBase {
                 }
                 break;
 
-            case EntityState.Dead: {
+            case EntityState.Dead:
+                {
                     if(mCurWeaponInd >= 0)
                         weapons[mCurWeaponInd].FireStop();
 
@@ -397,14 +382,12 @@ public class Player : EntityBase {
         if(delta < 0.0f) {
             if(stat.curHP <= 0.0f) {
                 state = (int)EntityState.Dead;
-            }
-            else {
+            } else {
                 state = (int)EntityState.Hurt;
             }
 
             HUD.instance.barHP.current = Mathf.CeilToInt(stat.curHP);
-        }
-        else {
+        } else {
             //healed
             Pause(true);
             HUD.instance.barHP.currentSmooth = Mathf.CeilToInt(stat.curHP);
@@ -419,8 +402,7 @@ public class Player : EntityBase {
         if(weapon == weapons[mCurWeaponInd]) {
             if(delta <= 0.0f) {
                 HUD.instance.barEnergy.current = Mathf.CeilToInt(weapon.currentEnergy);
-            }
-            else {
+            } else {
                 Pause(true);
                 HUD.instance.barEnergy.currentSmooth = Mathf.CeilToInt(weapon.currentEnergy);
             }
@@ -473,8 +455,7 @@ public class Player : EntityBase {
                 if(currentWeapon.allowSlide || !mSliding)
                     currentWeapon.FireStart();
             }
-        }
-        else if(dat.state == InputManager.State.Released) {
+        } else if(dat.state == InputManager.State.Released) {
             if(currentWeapon) {
                 currentWeapon.FireStop();
             }
@@ -519,20 +500,17 @@ public class Player : EntityBase {
                     if(!curWpn.isFireActive || curWpn.allowSlide)
                         SetSlide(true);
 
-                }
-                else {
+                } else {
                     mCtrl.Jump(true);
                 }
-            }
-            else {
+            } else {
                 //if we can stop sliding, then jump
                 SetSlide(false, false);
                 if(!mSliding) {
                     mCtrl.Jump(true);
                 }
             }
-        }
-        else if(dat.state == InputManager.State.Released) {
+        } else if(dat.state == InputManager.State.Released) {
             mCtrl.Jump(false);
         }
     }
@@ -564,8 +542,7 @@ public class Player : EntityBase {
 
                 Main.instance.input.RemoveButtonCall(0, InputAction.MenuEscape, OnInputPause);
             }
-        }
-        else {
+        } else {
             mPauseCounter--;
             if(mPauseCounter == 0) {
                 Main.instance.sceneManager.Resume();
@@ -592,8 +569,7 @@ public class Player : EntityBase {
                 mCtrl.moveSide = mCtrlSpr.isLeft ? -1.0f : 1.0f;
 
                 mCtrlSpr.state = PlatformerSpriteController.State.Slide;
-            }
-            else {
+            } else {
                 //cannot set to false if we can't stand
                 if(CanStand()) {
                     //revert
@@ -607,8 +583,7 @@ public class Player : EntityBase {
                     if(clearVelocity) {
                         mCtrl.moveSide = 0.0f;
                         rigidbody.velocity = Vector3.zero;
-                    }
-                    else {
+                    } else {
                         //limit x velocity
                         Vector3 v = rigidbody.velocity;
                         if(Mathf.Abs(v.x) > 12.0f) {
@@ -622,8 +597,7 @@ public class Player : EntityBase {
                     Vector3 pos = transform.position;
                     pos.y += (mDefaultColliderHeight - slideHeight) * 0.5f - 0.1f;
                     transform.position = pos;
-                }
-                else {
+                } else {
                     mSliding = true;
                 }
             }
@@ -653,8 +627,7 @@ public class Player : EntityBase {
                 if(weapon)
                     weapon.SaveEnergySpent();
             }
-        }
-        else {
+        } else {
             LevelController.CheckpointReset();
 
             foreach(Weapon weapon in weapons) {
@@ -673,8 +646,7 @@ public class Player : EntityBase {
 
         if(PlayerStats.curLife > 0) {
             Main.instance.sceneManager.Reload();
-        }
-        else {
+        } else {
             Main.instance.sceneManager.LoadScene(Scenes.gameover);
         }
     }
