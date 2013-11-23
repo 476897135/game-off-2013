@@ -174,6 +174,15 @@ public class Enemy : EntityBase {
                     activator.deactivateDelay = 0.0f;
                     activator.ForceActivate();
                 }
+
+                if(mBodyCtrl)
+                    mBodyCtrl.moveSide = 0.0f;
+
+                if(mBodySpriteCtrl)
+                    mBodySpriteCtrl.ResetAnimation();
+
+                if(rigidbody && !rigidbody.isKinematic)
+                    rigidbody.velocity = Vector3.zero;
                 break;
         }
     }

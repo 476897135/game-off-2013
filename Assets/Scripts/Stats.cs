@@ -87,7 +87,7 @@ public class Stats : MonoBehaviour {
 
             DamageMod damageAmpByType = GetDamageMod(damageTypeAmp, damage.type);
             if(damageAmpByType != null) {
-                amt += amt * damageAmpByType.val;
+                amt += damage.amount * damageAmpByType.val;
             }
             else {
                 DamageMod damageReduceByType = GetDamageMod(damageTypeReduction, damage.type);

@@ -3,7 +3,7 @@ using System.Collections;
 
 public class SpriteColorFrameRandom : MonoBehaviour {
     public tk2dSpriteAnimator anim;
-    public bool animPlayRepeat;
+    public bool animPlayRepeat = true;
 
     public tk2dBaseSprite spr;
 

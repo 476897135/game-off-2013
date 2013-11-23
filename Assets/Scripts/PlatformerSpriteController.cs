@@ -13,6 +13,7 @@ public class PlatformerSpriteController : MonoBehaviour {
     }
 
     public bool leftFlip = true;
+    public bool defaultLeft = false;
 
     public tk2dSpriteAnimator anim;
     public PlatformerController controller;
@@ -173,9 +174,9 @@ public class PlatformerSpriteController : MonoBehaviour {
         mAnimVelocitySpeedEnabled = false;
         anim.ClipFps = 0.0f;
         mOverrideClip = null;
-        mIsLeft = false;
-        if(anim && anim.Sprite)
-            anim.Sprite.FlipX = false;
+
+        mIsLeft = defaultLeft;
+        anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
 
         if(wallStickParticle) {
             wallStickParticle.loop = false;
@@ -215,6 +216,9 @@ public class PlatformerSpriteController : MonoBehaviour {
 
         anim.AnimationCompleted += OnAnimationComplete;
         anim.AnimationEventTriggered += OnAnimationFrameEvent;
+
+        mIsLeft = defaultLeft;
+        anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
 
         mDefaultAnimLib = anim.Library;
         mDefaultClipDat = new ClipData(this, mDefaultAnimLib);

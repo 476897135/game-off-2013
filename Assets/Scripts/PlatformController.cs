@@ -106,7 +106,7 @@ public class PlatformController : MonoBehaviour {
                             body.velocity += nWorldV;
                     }
                     else {
-                        body.MovePosition(go.transform.position + nWorldV * Time.fixedDeltaTime);
+                        body.MovePosition(body.position + nWorldV * Time.fixedDeltaTime);
                     }
 
                     //body.velocity += go.transform.localToWorldMatrix.MultiplyVector(nLocalV);
