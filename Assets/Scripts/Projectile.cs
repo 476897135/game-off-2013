@@ -13,7 +13,8 @@ public class Projectile : EntityBase {
         None,
         End,
         Stop,
-        Bounce
+        Bounce,
+        BounceRotate
     }
 
     public enum ForceBounceType {
@@ -25,45 +26,34 @@ public class Projectile : EntityBase {
 
     public bool simple; //don't use rigidbody, make sure you have a sphere collider and set it to trigger
     public LayerMask simpleLayerMask;
-
     public string[] hitTags;
-
     public float startVelocity;
     public float startVelocityAddRand;
-
     public float force;
-
     [SerializeField]
     float speedLimit;
-
     public float seekStartDelay = 0.0f;
     public float seekVelocity;
     public float seekVelocityCap = 5.0f;
     public float seekAngleCap = 360.0f;
-
     public bool decayEnabled = true;
     public float decayDelay;
-
     public bool releaseOnDie;
-
     public float dieDelay;
     public bool dieBlink;
     public bool dieDisablePhysics = true;
-
     public bool releaseOnSleep;
-
     public LayerMask explodeMask;
     public float explodeForce;
     public Vector3 explodeOfs;
     public float explodeRadius;
-
     public ContactType contactType = ContactType.End;
     public ForceBounceType forceBounce = ForceBounceType.None;
-
+    public int maxBounce = -1;
+    public float bounceRotateAngle;
+    public float bounceSurfaceOfs; //displace projectile slightly off surface based on normal
     public bool explodeOnDeath;
-
     public Transform applyDirToUp;
-
     public string deathSpawnGroup;
     public string deathSpawnType;
 
@@ -72,20 +62,17 @@ public class Projectile : EntityBase {
     public float oscillateDelay;*/
 
     private bool mSpawning = false;
-
     protected Vector3 mActiveForce;
     protected Vector3 mDir = Vector3.zero;
     protected Transform mSeek = null;
-
     protected Vector3 mCurVelocity; //only use by simple
 
     private Damage mDamage;
     private float mDefaultSpeedLimit;
     protected SphereCollider mSphereColl;
-
     protected float mMoveScale = 1.0f;
-
     private Stats mStats;
+    private int mCurBounce = 0;
 
     //private Vector2 mOscillateDir;
     //private bool mOscillateSwitch;
@@ -208,6 +195,8 @@ public class Projectile : EntityBase {
         //Debug.Log("start dir: " + mStartDir);
 
         mSpawning = false;
+
+        mCurBounce = 0;
 
         if(decayEnabled && decayDelay == 0) {
             OnDecayEnd();
@@ -366,46 +355,97 @@ public class Projectile : EntityBase {
                 else if(rigidbody != null)
                     rigidbody.velocity = Vector3.zero;
                 break;
-
+                            
             case ContactType.Bounce:
-                if(simple) {
-                    mCurVelocity = Vector3.Reflect(mCurVelocity, normal);
-                }
+                if(maxBounce > 0 && mCurBounce == maxBounce)
+                    state = (int)State.Dying;
                 else {
-                    if(rigidbody != null) {
-                        Vector3 reflVel = Vector3.Reflect(rigidbody.velocity, normal);
+                    if(simple) {
+                        mCurVelocity = Vector3.Reflect(mCurVelocity, normal);
 
-                        rigidbody.velocity = reflVel;
+                        if(bounceSurfaceOfs != 0.0f) {
+                            Vector3 p = transform.position;
+                            p += normal*bounceSurfaceOfs;
+                            transform.position = p;
+                        }
+                    }
+                    else {
+                        if(rigidbody != null) {
+                            if(bounceSurfaceOfs != 0.0f) {
+                                Vector3 p = transform.position;
+                                p += normal*bounceSurfaceOfs;
+                                rigidbody.MovePosition(p);
+                            }
 
-                        //TODO: this is only for 2D
-                        switch(forceBounce) {
-                            case ForceBounceType.ContactNormal:
-                                mActiveForce.Set(normal.x, normal.y, 0.0f);
-                                mActiveForce.Normalize();
-                                mActiveForce *= force;
-                                break;
+                            Vector3 reflVel = Vector3.Reflect(rigidbody.velocity, normal);
 
-                            case ForceBounceType.ReflectDir:
-                                mActiveForce.Set(reflVel.x, reflVel.y, 0.0f);
-                                mActiveForce.Normalize();
-                                mActiveForce *= force;
-                                break;
+                            rigidbody.velocity = reflVel;
 
-                            case ForceBounceType.ReflectDirXOnly:
-                                mActiveForce.Set(Mathf.Sign(reflVel.x), 0.0f, 0.0f);
-                                mActiveForce *= force;
-                                break;
+                            //TODO: this is only for 2D
+                            switch(forceBounce) {
+                                case ForceBounceType.ContactNormal:
+                                    mActiveForce.Set(normal.x, normal.y, 0.0f);
+                                    mActiveForce.Normalize();
+                                    mActiveForce *= force;
+                                    break;
+
+                                case ForceBounceType.ReflectDir:
+                                    mActiveForce.Set(reflVel.x, reflVel.y, 0.0f);
+                                    mActiveForce.Normalize();
+                                    mActiveForce *= force;
+                                    break;
+
+                                case ForceBounceType.ReflectDirXOnly:
+                                    mActiveForce.Set(Mathf.Sign(reflVel.x), 0.0f, 0.0f);
+                                    mActiveForce *= force;
+                                    break;
+                            }
+                        }
+
+                        //mActiveForce = Vector3.Reflect(mActiveForce, normal);
+                    }
+
+                    if(maxBounce > 0)
+                        mCurBounce++;
+                }
+                break;
+
+            case ContactType.BounceRotate:
+                if(maxBounce > 0 && mCurBounce == maxBounce)
+                    state = (int)State.Dying;
+                else {
+                    if(simple) {
+                        mCurVelocity = Quaternion.AngleAxis(bounceRotateAngle, Vector3.forward) * mCurVelocity;
+
+                        if(bounceSurfaceOfs != 0.0f) {
+                            Vector3 p = transform.position;
+                            p += normal*bounceSurfaceOfs;
+                            transform.position = p;
+                        }
+                    }
+                    else {
+                        mActiveForce = Quaternion.AngleAxis(bounceRotateAngle, Vector3.forward) * mCurVelocity;
+
+                        if(rigidbody != null) {
+                            rigidbody.velocity = Quaternion.AngleAxis(bounceRotateAngle, Vector3.forward) * rigidbody.velocity;
+
+                            if(bounceSurfaceOfs != 0.0f) {
+                                Vector3 p = transform.position;
+                                p += normal*bounceSurfaceOfs;
+                                rigidbody.MovePosition(p);
+                            }
                         }
                     }
 
-                    //mActiveForce = Vector3.Reflect(mActiveForce, normal);
+                    if(maxBounce > 0)
+                        mCurBounce++;
                 }
                 break;
         }
 
         //do damage
         //if(!explodeOnDeath && CheckTag(go.tag)) {
-            //mDamage.CallDamageTo(go, pos, normal);
+        //mDamage.CallDamageTo(go, pos, normal);
         //}
     }
 
@@ -478,9 +518,11 @@ public class Projectile : EntityBase {
                 Collider[] cols = Physics.OverlapSphere(pos, mSphereColl.radius, simpleLayerMask);
                 for(int i = 0, max = cols.Length; i < max; i++) {
                     Collider col = cols[i];
-                    dir = (col.bounds.center - pos).normalized;
-                    ApplyContact(col.gameObject, pos, dir);
-                    ApplyDamage(col.gameObject, pos, dir);
+                    if(CheckTag(col.tag)) {
+                        dir = (col.bounds.center - pos).normalized;
+                        ApplyContact(col.gameObject, pos, dir);
+                        ApplyDamage(col.gameObject, pos, dir);
+                    }
                 }
             }
         }

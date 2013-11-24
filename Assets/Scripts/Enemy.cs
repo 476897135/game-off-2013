@@ -371,7 +371,7 @@ public class Enemy : EntityBase {
             state = (int)EntityState.Dead;
         }
         else if(delta < 0.0f) {
-            if(stat.lastDamageSource != null && stat.lastDamageSource.stun)
+            if(stat.lastDamageSource != null && stat.lastDamageSource.stun && !stat.stunImmune)
                 state = (int)EntityState.Stun;
         }
     }
