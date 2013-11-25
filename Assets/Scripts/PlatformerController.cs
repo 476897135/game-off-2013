@@ -133,6 +133,11 @@ public class PlatformerController : RigidBodyController {
 
     public int jumpCounterCurrent { get { return mJumpCounter; } set { mJumpCounter = value; } }
 
+    /// <summary>
+    /// Note: Fixed time.
+    /// </summary>
+    public float jumpLastTime { get { return mJumpLastTime; } }
+
     public bool isJump { get { return mJump; } }
 
     public bool isJumpWall { get { return mJumpingWall; } }

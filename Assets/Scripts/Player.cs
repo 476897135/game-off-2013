@@ -325,9 +325,6 @@ public class Player : EntityBase {
 
         mStats = GetComponent<PlayerStats>();
 
-        mStats.changeHPCallback += OnStatsHPChange;
-        mStats.changeMaxHPCallback += OnStatsHPMaxChange;
-
         mBlinks = GetComponentsInChildren<SpriteColorBlink>(true);
         foreach(SpriteColorBlink blinker in mBlinks) {
             blinker.enabled = false;
@@ -335,9 +332,6 @@ public class Player : EntityBase {
 
         if(deathGOActivate)
             deathGOActivate.SetActive(false);
-
-        HUD.instance.barHP.animateEndCallback += OnEnergyAnimStop;
-        HUD.instance.barEnergy.animateEndCallback += OnEnergyAnimStop;
     }
 
     // Use this for initialization
@@ -358,6 +352,12 @@ public class Player : EntityBase {
         //initialize hp stuff
         HUD.instance.barHP.max = Mathf.CeilToInt(mStats.maxHP);
         HUD.instance.barHP.current = Mathf.CeilToInt(mStats.curHP);
+
+        mStats.changeHPCallback += OnStatsHPChange;
+        mStats.changeMaxHPCallback += OnStatsHPMaxChange;
+
+        HUD.instance.barHP.animateEndCallback += OnEnergyAnimStop;
+        HUD.instance.barEnergy.animateEndCallback += OnEnergyAnimStop;
     }
 
     void Update() {

@@ -48,6 +48,33 @@ public class Enemy : EntityBase {
     public GravityController gravityCtrl { get { return mGravCtrl; } }
     public PlatformerSpriteController bodySpriteCtrl { get { return mBodySpriteCtrl; } }
 
+    //for use with animator
+    public void FireAt(string proj, string childGO, int fdir, bool forceDecay, float decay) {
+        GameObject go = M8.Util.FindGameObjectByNameRecursive(gameObject, childGO);
+        Transform pt = go.transform;
+        Vector3 p = pt.position; p.z = 0;
+        Vector3 dir;
+        switch(fdir) {
+            case 0:
+                dir = pt.up;
+                break;
+            case 1:
+                dir = -pt.up;
+                break;
+            case 2:
+                dir = -pt.right;
+                break;
+            default:
+                dir = pt.right;
+                break;
+        }
+        Projectile _proj = Projectile.Create(projGroup, proj, p, dir, null);
+        if(forceDecay) {
+            _proj.decayEnabled = forceDecay;
+            _proj.decayDelay = decay;
+        }
+    }
+
     public void Jump(float delay) {
         if(mBodyCtrl) {
             CancelInvoke(JumpFinishKey);

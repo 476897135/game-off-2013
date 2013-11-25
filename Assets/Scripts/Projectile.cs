@@ -6,6 +6,7 @@ public class Projectile : EntityBase {
         Invalid = -1,
         Active,
         Seek,
+        SeekForce,
         Dying
     }
 
@@ -32,6 +33,8 @@ public class Projectile : EntityBase {
     public float force;
     [SerializeField]
     float speedLimit;
+    public bool seekUseForce = false;
+    public float seekForceDelay = 0.15f;
     public float seekStartDelay = 0.0f;
     public float seekVelocity;
     public float seekVelocityCap = 5.0f;
@@ -74,6 +77,9 @@ public class Projectile : EntityBase {
     private Stats mStats;
     private int mCurBounce = 0;
 
+    private Vector3 mSeekCurDir;
+    private Vector3 mSeekCurDirVel;
+
     //private Vector2 mOscillateDir;
     //private bool mOscillateSwitch;
 
@@ -87,7 +93,7 @@ public class Projectile : EntityBase {
         return ret;
     }
 
-    public bool isAlive { get { return (State)state == State.Active || (State)state == State.Seek; } }
+    public bool isAlive { get { return (State)state == State.Active || (State)state == State.Seek || (State)state == State.SeekForce; } }
 
     public Transform seek {
         get { return mSeek; }
@@ -96,11 +102,11 @@ public class Projectile : EntityBase {
 
             if(mSeek) {
                 if((State)state == State.Active) {
-                    state = (int)State.Seek;
+                    state = (int)(seekUseForce ? State.SeekForce : State.Seek);
                 }
             }
             else {
-                if((State)state == State.Seek) {
+                if((State)state == State.Seek || (State)state == State.SeekForce) {
                     state = (int)State.Active;
                 }
             }
@@ -258,6 +264,7 @@ public class Projectile : EntityBase {
     protected override void StateChanged() {
         switch((State)state) {
             case State.Seek:
+            case State.SeekForce:
             case State.Active:
                 if(collider)
                     collider.enabled = true;
@@ -338,7 +345,7 @@ public class Projectile : EntityBase {
 
     protected virtual void OnHPChange(Stats stat, float delta) {
         if(stat.curHP == 0) {
-            if(state == (int)State.Active || state == (int)State.Seek)
+            if(state == (int)State.Active || state == (int)State.Seek || state == (int)State.SeekForce)
                 state = (int)State.Dying;
         }
     }
@@ -481,8 +488,14 @@ public class Projectile : EntityBase {
 
     void OnSeekStart() {
         if((State)state != State.Dying) {
-            if(mSeek)
-                state = (int)State.Seek;
+            if(mSeek) {
+                if(seekUseForce) {
+                    mSeekCurDir = mActiveForce.normalized;
+                    mSeekCurDirVel = Vector3.zero;
+                }
+
+                state = (int)(seekUseForce ? State.SeekForce : State.Seek);
+            }
             else
                 state = (int)State.Active;
         }
@@ -528,7 +541,7 @@ public class Projectile : EntityBase {
         }
 
         //make sure we are still active
-        if((State)state == State.Active || (State)state == State.Seek)
+        if((State)state == State.Active || (State)state == State.Seek || (State)state == State.SeekForce)
             transform.position = transform.position + delta;
     }
 
@@ -564,6 +577,32 @@ public class Projectile : EntityBase {
                         if(mActiveForce != Vector3.zero)
                             rigidbody.AddForce(mActiveForce * mMoveScale);
                     }
+                }
+                break;
+
+            case State.SeekForce:
+                if(rigidbody && mSeek != null) {
+                    Vector3 pos = transform.position;
+                    Vector3 dest = mSeek.position;
+                    Vector3 _dir = dest - pos;
+                    float dist = _dir.magnitude;
+                    
+                    if(dist > 0.0f) {
+                        _dir /= dist;
+                        if(seekForceDelay > 0.0f)
+                            mSeekCurDir = Vector3.SmoothDamp(mSeekCurDir, _dir, ref mSeekCurDirVel, seekForceDelay, Mathf.Infinity, Time.fixedDeltaTime);
+                        else
+                            mSeekCurDir = _dir;
+                    }
+
+                    if(speedLimit > 0.0f) {
+                        float sqrSpd = rigidbody.velocity.sqrMagnitude;
+                        if(sqrSpd > speedLimit * speedLimit) {
+                            rigidbody.velocity = (rigidbody.velocity / Mathf.Sqrt(sqrSpd)) * speedLimit;
+                        }
+                    }
+
+                    rigidbody.AddForce(mSeekCurDir * force * mMoveScale);
                 }
                 break;
 

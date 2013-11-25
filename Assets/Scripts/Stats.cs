@@ -96,11 +96,12 @@ public class Stats : MonoBehaviour {
             }
 
             if(amt > 0.0f) {
-                curHP -= amt;
-
-                if(curHP <= 0.0f && itemDropIndex >= 0) {
+                if(curHP - amt <= 0.0f && itemDropIndex >= 0) {
+                    Debug.Log("drop?");
                     ItemDropManager.instance.DoDrop(itemDropIndex, transform.localToWorldMatrix.MultiplyPoint(itemDropOfs));
                 }
+
+                curHP -= amt;
 
                 return true;
             }
