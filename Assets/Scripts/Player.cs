@@ -311,6 +311,7 @@ public class Player : EntityBase {
         mCtrl = GetComponent<PlatformerController>();
         mCtrl.moveInputX = InputAction.MoveX;
         mCtrl.moveInputY = InputAction.MoveY;
+        mCtrl.collisionEnterCallback += OnRigidbodyCollisionEnter;
 
         mDefaultCtrlMoveMaxSpeed = mCtrl.moveMaxSpeed;
         mDefaultCtrlMoveForce = mCtrl.moveForce;
@@ -648,6 +649,19 @@ public class Player : EntityBase {
             Main.instance.sceneManager.Reload();
         } else {
             Main.instance.sceneManager.LoadScene(Scenes.gameover);
+        }
+    }
+
+    void OnRigidbodyCollisionEnter(RigidBodyController controller, Collision col) {
+        if(col.collider.CompareTag("DropDamage")) {
+            RigidBodyController.CollideInfo inf = controller.GetCollideInfo(col.collider);
+            //Debug.Log("infflag: "+inf.flag);
+            if(inf != null && (inf.flag & CollisionFlags.Above) != CollisionFlags.None && col.relativeVelocity.sqrMagnitude >= 100.0f) {
+                Damage dmg = col.gameObject.GetComponent<Damage>();
+                if(dmg) {
+                    dmg.CallDamageTo(gameObject, col.contacts[0].point, col.contacts[0].normal);
+                }
+            }
         }
     }
 }

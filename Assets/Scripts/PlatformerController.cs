@@ -26,6 +26,8 @@ public class PlatformerController : RigidBodyController {
     public bool jumpDropAllow = true; //if true, player can jump when they are going down
     public float jumpAirDelay = 0.1f; //allow player to jump if they are off the ground for a short time.
 
+    public bool slideAllowJump = false;
+
     public float airDampForceX; //force to try to reduce the horizontal speed while mid-air
     public float airDampMinSpeedX; //minimum criteria of horizontal speed when dampening
 
@@ -260,8 +262,8 @@ public class PlatformerController : RigidBodyController {
                     if(jumpCallback != null)
                         jumpCallback(this);
                 }
-                else if(!isSlopSlide) {
-                    if(isGrounded || (mJumpCounter < jumpCounter && (Time.fixedTime - mLastGroundTime < jumpAirDelay || jumpDropAllow || mJumpCounter > 0))) {
+                else if(!isSlopSlide || slideAllowJump) {
+                    if(isGrounded || isSlopSlide || (mJumpCounter < jumpCounter && (Time.fixedTime - mLastGroundTime < jumpAirDelay || jumpDropAllow || mJumpCounter > 0))) {
                         lockDrag = true;
                         rigidbody.drag = airDrag;
 

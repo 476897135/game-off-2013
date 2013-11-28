@@ -32,6 +32,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     public string slideClip = "slide";
     //public string climbClip = "climb";
 
+    public bool multiSprites;
+
     public float minSpeed = 0.5f;//used if useVelocitySpeed=true 
     public float framePerMeter = 0.1f; //used if useVelocitySpeed=true 
 
@@ -53,6 +55,9 @@ public class PlatformerSpriteController : MonoBehaviour {
 
         public tk2dSpriteAnimationClip slide;
         //public tk2dSpriteAnimationClip climb;
+
+        public void RefreshClipRefs() {
+        }
 
         public ClipData(PlatformerSpriteController ctrl, tk2dSpriteAnimation lib) {
             idle = lib.GetClipByName(ctrl.idleClip);
@@ -87,6 +92,8 @@ public class PlatformerSpriteController : MonoBehaviour {
     private int mAnimLibIndex = -1; //-1 is default
     private bool mAnimVelocitySpeedEnabled;
 
+    private tk2dBaseSprite[] mMultiSprites; //if multisprites is true
+
     public tk2dSpriteAnimationClip overrideClip {
         get { return mOverrideClip; }
     }
@@ -97,7 +104,15 @@ public class PlatformerSpriteController : MonoBehaviour {
             if(mIsLeft != value) {
                 mIsLeft = value;
 
-                anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
+                bool flip = mIsLeft ? leftFlip : !leftFlip;
+
+                if(multiSprites) {
+                    for(int i = 0; i < mMultiSprites.Length; i++)
+                        mMultiSprites[i].FlipX = flip;
+                }
+
+                if(anim)
+                    anim.Sprite.FlipX = flip;
 
                 if(flipCallback != null)
                     flipCallback(this);
@@ -172,11 +187,18 @@ public class PlatformerSpriteController : MonoBehaviour {
 
     public void ResetAnimation() {
         mAnimVelocitySpeedEnabled = false;
-        anim.ClipFps = 0.0f;
         mOverrideClip = null;
-
         mIsLeft = defaultLeft;
-        anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
+
+        if(anim) {
+            anim.ClipFps = 0.0f;
+            anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
+        }
+
+        if(multiSprites) {
+            for(int i = 0; i < mMultiSprites.Length; i++)
+                mMultiSprites[i].FlipX = mIsLeft ? leftFlip : !leftFlip;
+        }
 
         if(wallStickParticle) {
             wallStickParticle.loop = false;
@@ -204,6 +226,13 @@ public class PlatformerSpriteController : MonoBehaviour {
         }
     }
 
+    public void RefreshClips() {
+        if(anim) {
+            mDefaultAnimLib = anim.Library;
+            mDefaultClipDat = new ClipData(this, mDefaultAnimLib);
+        }
+    }
+
     void OnDestroy() {
         flipCallback = null;
         clipFinishCallback = null;
@@ -214,18 +243,28 @@ public class PlatformerSpriteController : MonoBehaviour {
         if(anim == null)
             anim = GetComponent<tk2dSpriteAnimator>();
 
-        anim.AnimationCompleted += OnAnimationComplete;
-        anim.AnimationEventTriggered += OnAnimationFrameEvent;
-
         mIsLeft = defaultLeft;
-        anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
 
-        mDefaultAnimLib = anim.Library;
-        mDefaultClipDat = new ClipData(this, mDefaultAnimLib);
-                
-        mLibClips = new ClipData[animLibs.Length];
-        for(int i = 0, max = animLibs.Length; i < max; i++) {
-            mLibClips[i] = new ClipData(this, animLibs[i]);
+        if(anim) {
+            anim.AnimationCompleted += OnAnimationComplete;
+            anim.AnimationEventTriggered += OnAnimationFrameEvent;
+
+
+            anim.Sprite.FlipX = mIsLeft ? leftFlip : !leftFlip;
+
+            mDefaultAnimLib = anim.Library;
+            mDefaultClipDat = new ClipData(this, mDefaultAnimLib);
+                    
+            mLibClips = new ClipData[animLibs.Length];
+            for(int i = 0, max = animLibs.Length; i < max; i++) {
+                mLibClips[i] = new ClipData(this, animLibs[i]);
+            }
+        }
+
+        if(multiSprites) {
+            mMultiSprites = GetComponentsInChildren<tk2dBaseSprite>(true);
+            for(int i = 0; i < mMultiSprites.Length; i++)
+                mMultiSprites[i].FlipX = mIsLeft ? leftFlip : !leftFlip;
         }
 
         if(controller == null)
@@ -261,7 +300,7 @@ public class PlatformerSpriteController : MonoBehaviour {
         switch(mState) {
             case State.None:
                 if(controller.isJumpWall) {
-                    anim.Play(dat.wallJump);
+                    if(anim) anim.Play(dat.wallJump);
 
                     left = controller.localVelocity.x < 0.0f;
                 }
@@ -274,7 +313,7 @@ public class PlatformerSpriteController : MonoBehaviour {
                         wallStickParticle.loop = true;
                     }
 
-                    anim.Play(dat.wallStick);
+                    if(anim) anim.Play(dat.wallStick);
 
                     left = M8.MathUtil.CheckSide(controller.wallStickCollide.normal, controller.dirHolder.up) == M8.MathUtil.Side.Right;
 
@@ -283,26 +322,28 @@ public class PlatformerSpriteController : MonoBehaviour {
                     if(wallStickParticle)
                         wallStickParticle.loop = false;
 
-                    if(controller.isGrounded) {
-                        if(controller.moveSide != 0.0f) {
-                            anim.Play(dat.move);
+                    if(anim) {
+                        if(controller.isGrounded) {
+                            if(controller.moveSide != 0.0f) {
+                                anim.Play(dat.move);
+                            }
+                            else {
+                                anim.Play(dat.idle);
+                            }
                         }
                         else {
-                            anim.Play(dat.idle);
-                        }
-                    }
-                    else {
-                        tk2dSpriteAnimationClip clip;
+                            tk2dSpriteAnimationClip clip;
 
-                        if(controller.localVelocity.y <= 0.0f) {
-                            clip = GetMidAirClip(dat.downs);
-                        }
-                        else {
-                            clip = GetMidAirClip(dat.ups);
-                        }
+                            if(controller.localVelocity.y <= 0.0f) {
+                                clip = GetMidAirClip(dat.downs);
+                            }
+                            else {
+                                clip = GetMidAirClip(dat.ups);
+                            }
 
-                        if(clip != null)
-                            anim.Play(clip);
+                            if(clip != null)
+                                anim.Play(clip);
+                        }
                     }
 
                     if(controller.moveSide != 0.0f) {
@@ -312,7 +353,8 @@ public class PlatformerSpriteController : MonoBehaviour {
                 break;
 
             case State.Slide:
-                anim.Play(dat.slide);
+                if(anim)
+                    anim.Play(dat.slide);
 
                 if(controller.moveSide != 0.0f) {
                     left = controller.moveSide < 0.0f;

@@ -150,13 +150,6 @@ public class Projectile : EntityBase {
         speedLimit = mDefaultSpeedLimit;
     }
 
-    protected override void OnDespawned() {
-        CancelInvoke();
-        RevertSpeedLimit();
-
-        base.OnDespawned();
-    }
-
     protected override void Awake() {
         base.Awake();
 
@@ -256,6 +249,16 @@ public class Projectile : EntityBase {
     public override void Release() {
         state = (int)State.Invalid;
 
+        CancelInvoke();
+        RevertSpeedLimit();
+        
+        PhysicsDisable();
+        
+        if(mStats) {
+            mStats.Reset();
+            mStats.isInvul = true;
+        }
+
         mSpawning = false;
 
         base.Release();
@@ -293,12 +296,15 @@ public class Projectile : EntityBase {
                 break;
 
             case State.Invalid:
+                /*CancelInvoke();
+                RevertSpeedLimit();
+
                 PhysicsDisable();
 
                 if(mStats) {
                     mStats.Reset();
                     mStats.isInvul = true;
-                }
+                }*/
                 break;
         }
     }

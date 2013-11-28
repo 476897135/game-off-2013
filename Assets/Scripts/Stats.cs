@@ -97,7 +97,7 @@ public class Stats : MonoBehaviour {
 
             if(amt > 0.0f) {
                 if(curHP - amt <= 0.0f && itemDropIndex >= 0) {
-                    Debug.Log("drop?");
+                    //Debug.Log("drop?");
                     ItemDropManager.instance.DoDrop(itemDropIndex, transform.localToWorldMatrix.MultiplyPoint(itemDropOfs));
                 }
 

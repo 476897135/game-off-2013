@@ -55,15 +55,15 @@ public class EnemyBossCatGirl : Enemy {
     private int mProjCounter;
 
     protected override void StateChanged() {
-        base.StateChanged();
-
         switch((EntityState)prevState) {
             case EntityState.Normal:
                 bodyCtrl.inputEnabled = false;
-
+                
                 ToPhase(Phase.None);
                 break;
         }
+
+        base.StateChanged();
 
         switch((EntityState)state) {
             case EntityState.Normal:

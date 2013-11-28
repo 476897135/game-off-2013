@@ -1,25 +1,27 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\EnemyJumpNShoot.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\TransRotZByVelocity.cs">
     <Files>
-      <File FileName="Assets\Scripts\Enemy.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\EnemyMoveAndShoot.cs" Line="1" Column="1" />
       <File FileName="Assets\Scripts\PlatformerSpriteController.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\Player.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\ItemPickup.cs" Line="1" Column="1" />
-      <File FileName="Assets\M8\Scripts\Physics\ForceField.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\FSMActions\RigidBodySetDetectCollision.cs" Line="1" Column="1" />
-      <File FileName="Assets\M8\Scripts\Game\EntityActivator.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\EnemyBossLightning.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\PlatformerController.cs" Line="1" Column="1" />
-      <File FileName="Assets\M8\Scripts\Transform\TransAnimSpinner.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\EnemyJumpNShoot.cs" Line="11" Column="41" />
+      <File FileName="Assets\Scripts\EnemyJumpNShoot.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\EnemyCatRoller.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\EnemyMoveAndShoot.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\Enemy.cs" Line="1" Column="1" />
       <File FileName="Assets\Scripts\Projectile.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\AnimatorAutoPlayDelay.cs" Line="1" Column="1" />
-      <File FileName="Assets\M8\Scripts\tk2dExt\SpriteProperty.cs" Line="1" Column="1" />
-      <File FileName="Assets\M8\Scripts\Utils\Util.cs" Line="1" Column="1" />
-      <File FileName="Assets\Scripts\Stats.cs" Line="97" Column="1" />
-      <File FileName="Assets\Scripts\EnemyFacePlayerShoot.cs" Line="7" Column="28" />
+      <File FileName="Assets\Scripts\EntityBlinkDelay.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\PlatformController.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\PlatformerController.cs" Line="1" Column="1" />
+      <File FileName="Assets\M8\Scripts\Physics\RigidBodyController.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\DamageByContactSpeed.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\Player.cs" Line="1" Column="1" />
+      <File FileName="Assets\M8\Scripts\Physics\ForceField.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\SpriteHFlipRigidbodyVelX.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\tk2dCamActivator.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\ItemDropManager.cs" Line="1" Column="1" />
+      <File FileName="Assets\Scripts\EnemyBossLightning.cs" Line="1" Column="1" />
+      <File FileName="Assets\M8\Scripts\Transform\TransAnimWaveOfsRand.cs" Line="1" Column="1" />
+      <File FileName="Assets\M8Animator\Scripts\AnimatorData.cs" Line="27" Column="38" />
+      <File FileName="Assets\Scripts\TransRotZByVelocity.cs" Line="18" Column="45" />
     </Files>
     <Pads>
       <Pad Id="ClassPad">
@@ -28,9 +30,7 @@
     </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore>
-      <Breakpoint file="C:\Lab\game-off-2013\Assets\Scripts\Player.cs" line="124" />
-    </BreakpointStore>
+    <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>

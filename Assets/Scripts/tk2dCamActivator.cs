@@ -5,6 +5,7 @@ using System.Collections;
 /// Make sure to set the tag of the main camera with MainCamera
 /// </summary>
 public class tk2dCamActivator : EntityActivator {
+    public Transform targetRef; //if not null, determine visibility based on this position
     public Rect extents;
     public float checkDelay = 0.2f;
 
@@ -20,7 +21,7 @@ public class tk2dCamActivator : EntityActivator {
 
         bool isContained = false;
 
-        Vector2 pos = transform.position;
+        Vector2 pos = targetRef ? targetRef.position : transform.position;
         Rect wExtends = extents;
         wExtends.center = new Vector2(pos.x + (wExtends.center.x - wExtends.width * 0.5f), pos.y + (wExtends.center.y - wExtends.height * 0.5f));
 
@@ -84,7 +85,7 @@ public class tk2dCamActivator : EntityActivator {
     void OnDrawGizmosSelected() {
         if(extents.width > 0 && extents.height > 0) {
             Gizmos.color = Color.cyan;
-            Vector3 c = transform.position;
+            Vector3 c = targetRef ? targetRef.position : transform.position;
             c.x += extents.center.x - extents.width * 0.5f;
             c.y += extents.center.y - extents.height * 0.5f;
             Gizmos.DrawWireCube(c, new Vector3(extents.width, extents.height, 1.0f));

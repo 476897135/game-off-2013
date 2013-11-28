@@ -61,8 +61,6 @@ public class EnemyBossLightning : Enemy {
     private TransAnimSpinner mSuperStrikeSpinner;
 
     protected override void StateChanged() {
-        base.StateChanged();
-        
         switch((EntityState)prevState) {
             case EntityState.Normal:
                 bodyCtrl.inputEnabled = false;
@@ -70,7 +68,9 @@ public class EnemyBossLightning : Enemy {
                 ToPhase(Phase.None);
                 break;
         }
-        
+
+        base.StateChanged();
+                        
         switch((EntityState)state) {
             case EntityState.Normal:
                 mNextPhase = Phase.TargetStrike;
