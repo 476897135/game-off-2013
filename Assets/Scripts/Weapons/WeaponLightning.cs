@@ -77,6 +77,7 @@ public class WeaponLightning : Weapon {
             Vector3 p = Vector3.zero;
             Vector3 dir = Vector3.zero;
             Collider col = null;
+            Stats colStat = null;
             float nearSqr = Mathf.Infinity;
 
             for(int cI = 0, cMax = cols.Length; cI < cMax; cI++) {
@@ -88,10 +89,14 @@ public class WeaponLightning : Weapon {
                     Vector3 _dir = _p - pos;
                     float _dist = _dir.sqrMagnitude;
                     if(_dist < nearSqr) {
-                        p = _p;
-                        dir = _dir;
-                        col = cols[cI];
-                        nearSqr = _dist;
+                        Stats stat = cols[cI].GetComponent<Stats>();
+                        if(stat && stat.CanDamage(mDmg)) {
+                            p = _p;
+                            dir = _dir;
+                            col = cols[cI];
+                            colStat = stat;
+                            nearSqr = _dist;
+                        }
                     }
                 }
             }
@@ -104,7 +109,7 @@ public class WeaponLightning : Weapon {
             float dist = Mathf.Sqrt(nearSqr);
             dir /= dist;
 
-            if(mDmg.CallDamageTo(col.gameObject, p, (p - pos).normalized)) {
+            if(mDmg.CallDamageTo(colStat, p, (p - pos).normalized)) {
                 mStrikes[mStrikeActives].SetActive(true);
                 mStrikes[mStrikeActives].transform.parent = null;
                 mStrikes[mStrikeActives].transform.position = pos;

@@ -73,6 +73,29 @@ public class Stats : MonoBehaviour {
         return null;
     }
 
+    public bool CanDamage(Damage damage) {
+        if(!mIsInvul) {
+            float amt = damage.amount;
+            
+            if(damageReduction > 0.0f) {
+                amt -= amt * damageReduction;
+            }
+            
+            DamageMod damageAmpByType = GetDamageMod(damageTypeAmp, damage.type);
+            if(damageAmpByType != null) {
+                amt += damage.amount * damageAmpByType.val;
+            }
+            else {
+                DamageMod damageReduceByType = GetDamageMod(damageTypeReduction, damage.type);
+                if(damageReduceByType != null)
+                    amt -= amt * damageReduceByType.val;
+            }
+
+            return amt > 0.0f;
+        }
+        return false;
+    }
+
     public bool ApplyDamage(Damage damage, Vector3 hitPos, Vector3 hitNorm) {
         mLastDamage = damage;
         mLastDamagePos = hitPos;

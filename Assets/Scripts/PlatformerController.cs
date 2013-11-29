@@ -228,7 +228,7 @@ public class PlatformerController : RigidBodyController {
     /// Call this for manual input jumping
     /// </summary>
     public void Jump(bool down) {
-        if(mJumpInputDown != down) {
+        if(mJumpInputDown != down && !rigidbody.isKinematic) {
             mJumpInputDown = down;
 
             if(mJumpInputDown) {

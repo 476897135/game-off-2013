@@ -19,11 +19,15 @@ public class Damage : MonoBehaviour {
     public Type type = Type.Energy;
     public bool stun = false;
 
+    public bool CallDamageTo(Stats stat, Vector3 hitPos, Vector3 hitNorm) {
+        return stat.ApplyDamage(this, hitPos, hitNorm);
+    }
+
     public bool CallDamageTo(GameObject target, Vector3 hitPos, Vector3 hitNorm) {
         //target.SendMessage(DamageMessage, this, SendMessageOptions.DontRequireReceiver);
         Stats stat = target.GetComponent<Stats>();
         if(stat) {
-            return stat.ApplyDamage(this, hitPos, hitNorm);
+            return CallDamageTo(stat, hitPos, hitNorm);
         }
 
         return false;

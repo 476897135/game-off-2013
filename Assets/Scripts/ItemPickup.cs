@@ -150,8 +150,6 @@ public class ItemPickup : EntityBase {
     public override void SpawnFinish() {
         //start ai, player control, etc
         StartCoroutine(DoDrop());
-        Invoke("Release", destroyDelay);
-        Invoke("DoBlinkers", destroyStartBlinkDelay);
     }
 
     protected override void SpawnStart() {
@@ -235,6 +233,9 @@ public class ItemPickup : EntityBase {
             if(Physics.SphereCast(collider.bounds.center, mRadius, Vector3.down, out hit, moveY, dropLayerMask)) {
                 pos = hit.point + hit.normal * mRadius;
                 mDropActive = false;
+
+                Invoke("Release", destroyDelay);
+                Invoke("DoBlinkers", destroyStartBlinkDelay);
             }
             else {
                 pos.y -= moveY;
