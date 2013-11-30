@@ -13,11 +13,13 @@ public class ModalLevelSelect : UIController {
 
             foreach(UILevelSelectItem item in mLevelItems) {
                 item.listener.onClick = OnLevelClick;
+                item.listener.onSelect = OnLevelSelect;
             }
         }
         else {
             foreach(UILevelSelectItem item in mLevelItems) {
                 item.listener.onClick = null;
+                item.listener.onSelect = null;
             }
         }
     }
@@ -39,9 +41,20 @@ public class ModalLevelSelect : UIController {
         finalLevel.InitFinalLevel(mLevelItems);
     }
 
+    void OnLevelSelect(GameObject go, bool s) {
+        if(s) {
+            for(int i = 0, max = mLevelItems.Length; i < max; i++) {
+                if(mLevelItems[i].gameObject == go) {
+                    gitgirl.portrait.spriteName = mLevelItems[i].gitGirlPortraitRef;
+                    break;
+                }
+            }
+        }
+    }
+
     void OnLevelClick(GameObject go) {
         for(int i = 0, max = mLevelItems.Length; i < max; i++) {
-            if(mLevelItems[i].gameObject == go) {
+            if(mLevelItems[i].gameObject == go && mLevelItems[i] != gitgirl) {
                 mLevelItems[i].Click();
                 break;
             }

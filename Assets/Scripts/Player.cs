@@ -359,6 +359,8 @@ public class Player : EntityBase {
 
         HUD.instance.barHP.animateEndCallback += OnEnergyAnimStop;
         HUD.instance.barEnergy.animateEndCallback += OnEnergyAnimStop;
+
+        HUD.instance.RefreshLifeCount();
     }
 
     void Update() {

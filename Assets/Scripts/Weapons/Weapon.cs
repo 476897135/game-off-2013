@@ -98,7 +98,7 @@ public class Weapon : MonoBehaviour {
     private float mCurEnergy;
 
     public static bool IsAvailable(int index) {
-        return true;//index == 0 ? true : SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
+        return index == 0 ? true : SceneState.instance.CheckGlobalFlag(weaponFlagsKey, index);
     }
 
     public static void UnlockWeapon(int index) {
@@ -114,6 +114,7 @@ public class Weapon : MonoBehaviour {
 
     public string iconSpriteRef { get { return _iconSpriteRef; } }
     public string gitGirlSpriteRef { get { return _gitGirlSpriteRef; } }
+    public string labelTextRef { get { return _labelTextRef; } }
     public string labelText { get { return GameLocalize.GetText(_labelTextRef); } }
 
     public string energyTypeKey {

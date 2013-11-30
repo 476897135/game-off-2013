@@ -14,6 +14,16 @@
 		"text":"This will delete the previous data, are you sure?"
 	},
 	
+	{
+		"key":"exit_confirm_title",
+		"text":"EXIT STAGE"
+	},
+	
+	{
+		"key":"exit_confirm_desc",
+		"text":"Are you sure you want to leave?"
+	},
+	
 	
 	{
 		"key":"katgirl_name",
@@ -49,28 +59,58 @@
 		"key":"stargazer",
 		"text":"STAR GAZER"
 	},
+	
 	{
 		"key":"hoolahoop",
 		"text":"HULA HOOP"
 	},
 	{
+		"key":"hoolahoop_desc",
+		"text":"Super fast! cool! Hold the fire button (default: X) to go fast and hit enemies that are in the way. While active, you are immune to contact damage."
+	},
+	
+	{
 		"key":"cannon",
 		"text":"RESOLVER"
 	},
+	{
+		"key":"cannon_desc",
+		"text":"The ultimate conflict resolver.  Adjust your aim by pressing UP or DOWN. The RESOLVER can also break boulders. Now go forth and rain death upon them!"
+	},
+	
 	{
 		"key":"cloner",
 		"text":"CLONE"
 	},
 	{
+		"key":"cloner_desc",
+		"text":"PLACEHOLDER Press fire button to create a clone, press fire again to detonate."
+	},
+	
+	{
 		"key":"hipster",
 		"text":"TIME WARP"
 	},
+	{
+		"key":"hipster_desc",
+		"text":"Hold fire button to slow down time around you.  Also makes you fall slower."
+	},
+	
 	{
 		"key":"lightning",
 		"text":"L. FORK"
 	},
 	{
+		"key":"lightning_desc",
+		"text":"Fry your foes and eat them with this fork.  Press the FIRE button (default: X) when the reticle is active.  Hold the FIRE button to create a chain lightning, hitting multiple foes."
+	},
+	
+	{
 		"key":"whip",
 		"text":"PULL WHIP"
+	},
+	{
+		"key":"whip_desc",
+		"text":"Punish your foes with a deadly strike whip attack.  This can cause some enemies to be stunned.  You can also grab items with this whip, nifty!"
 	},
 ]

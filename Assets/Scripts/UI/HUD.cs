@@ -5,10 +5,15 @@ public class HUD : MonoBehaviour {
     public UIEnergyBar barHP;
     public UIEnergyBar barEnergy;
     public UIEnergyBar barBoss;
+    public UILabel lifeCountLabel;
 
     private static HUD mInstance;
 
     public static HUD instance { get { return mInstance; } }
+
+    public void RefreshLifeCount() {
+        lifeCountLabel.text = PlayerStats.curLife.ToString();
+    }
 
     void OnDestroy() {
         if(mInstance == this) {

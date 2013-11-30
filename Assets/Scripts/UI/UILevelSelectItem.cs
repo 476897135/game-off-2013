@@ -4,6 +4,8 @@ using System.Collections;
 public class UILevelSelectItem : MonoBehaviour {
     public string level;
 
+    public string gitGirlPortraitRef = "gitGirl_";
+
     public UISprite portrait;
     public GameObject inactive;
 

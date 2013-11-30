@@ -153,8 +153,14 @@ public class Enemy : EntityBase {
 
         switch((EntityState)state) {
             case EntityState.Dead:
-                if(weaponIndexUnlock != -1)
+                if(weaponIndexUnlock != -1) {
+                    //save weapon info for victory screen
+                    Player player = Player.instance;
+                    ModalVictory.sWeaponIconRef = player.weapons[weaponIndexUnlock].iconSpriteRef;
+                    ModalVictory.sWeaponTitleRef = player.weapons[weaponIndexUnlock].labelTextRef;
+
                     Weapon.UnlockWeapon(weaponIndexUnlock);
+                }
 
                 if(disablePhysicsOnDeath)
                     SetPhysicsActive(false, false);

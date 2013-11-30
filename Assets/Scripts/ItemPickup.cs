@@ -66,6 +66,7 @@ public class ItemPickup : EntityBase {
 
                 case ItemType.Life:
                     PlayerStats.curLife++;
+                    HUD.instance.RefreshLifeCount();
                     break;
 
                 case ItemType.HealthUpgrade:
