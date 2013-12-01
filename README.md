@@ -2,6 +2,10 @@
 
 Megaman inspired game. Me no speaky english when this tired. Will be back soon with description!
 
+###Notes
+* Currently adding other graphics in levels
+* Sounds
+
 ###Controls
 * Arrow Keys - Move
 * Z or W - Jump
