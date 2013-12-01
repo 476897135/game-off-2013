@@ -8,6 +8,8 @@ public class WeaponLightning : Weapon {
 
     public Transform strikeHolder;
 
+    public GameObject reticle;
+
     public LayerMask masks;
 
     private GameObject[] mStrikes;
@@ -44,6 +46,9 @@ public class WeaponLightning : Weapon {
                 mStrikes[i].SetActive(false);
         }
 
+        if(reticle)
+            reticle.SetActive(false);
+
         base.OnDisable();
     }
 
@@ -63,13 +68,16 @@ public class WeaponLightning : Weapon {
         }
 
         mStruckCols = new Collider[mStrikes.Length];
+
+        reticle.transform.parent = null;
+        reticle.SetActive(false);
     }
 
     void PerformStrike(Collider aCol, Vector3 pos, int chargeInd) {
         if(mStrikeActives >= mStrikes.Length)
             return;
 
-        mDmg.amount = mDefaultDmgAmt * (float)(chargeInd + 1);
+        mDmg.amount = mDefaultDmgAmt + ((float)chargeInd);
 
         Collider[] cols = Physics.OverlapSphere(pos, radius, masks);
         if(cols != null && cols.Length > 0) {
@@ -143,6 +151,40 @@ public class WeaponLightning : Weapon {
                     mStruckCols[i] = null;
                 }
             }
+
+            reticle.SetActive(false);
+        }
+        else {
+            //set reticle to nearest damageable target
+            Collider reticleTarget = null;
+            Collider[] cols = Physics.OverlapSphere(spawnPoint, radius, masks);
+            if(cols != null && cols.Length > 0) {
+                //get nearest collider
+                float nearSqr = Mathf.Infinity;
+
+                for(int cI = 0, cMax = cols.Length; cI < cMax; cI++) {
+                    if(cols[cI].gameObject.activeInHierarchy) {
+                        Vector3 _p = cols[cI].bounds.center;
+                        Vector3 _dir = _p - spawnPoint;
+                        float _dist = _dir.sqrMagnitude;
+                        if(_dist < nearSqr) {
+                            Stats stat = cols[cI].GetComponent<Stats>();
+                            if(stat && stat.CanDamage(mDmg)) {
+                                reticleTarget = cols[cI];
+                                nearSqr = _dist;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(reticleTarget) {
+                reticle.SetActive(true);
+                Vector3 pos = reticleTarget.bounds.center; pos.z = 0;
+                reticle.transform.position = pos;
+            }
+            else
+                reticle.SetActive(false);
         }
     }
 

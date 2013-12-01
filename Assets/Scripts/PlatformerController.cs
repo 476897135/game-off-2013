@@ -43,6 +43,7 @@ public class PlatformerController : RigidBodyController {
     public LayerMask wallStickInvalidMask; //layer masks that do not allow wall stick
 
     public LayerMask plankLayer;
+    public bool plankEnableDrop; //by holding down arrow, drop down
     public float plankDropDelay; //hold down long enough to drop from plank
     public float plankCheckDelay; //delay to check if we can revert plank collision
 
@@ -342,7 +343,7 @@ public class PlatformerController : RigidBodyController {
             if(plankFound) {
                 if(plankCollFlag == CollisionFlags.Below) {
                     //check if we are ready to drop
-                    if(mMoveYGround < 0.0f && Time.fixedTime - mMoveYGroundDownLastTime >= plankDropDelay) {
+                    if(plankEnableDrop && mMoveYGround < 0.0f && Time.fixedTime - mMoveYGroundDownLastTime >= plankDropDelay) {
                         SetPlankingIgnore(true);
                     }
                 }

@@ -9,6 +9,7 @@ public class ItemPickup : EntityBase {
     public int bit; //which bit in the flag, used by certain types
     public float value; //used by certain types
     public string sound;
+    public string popTextRef;
 
     public LayerMask dropLayerMask; //which layers the drop will stop when hit
     public float dropSpeed;
@@ -99,7 +100,8 @@ public class ItemPickup : EntityBase {
             if(collider)
                 collider.enabled = false;
 
-            //TODO: dialog?
+            if(!string.IsNullOrEmpty(popTextRef))
+                HUD.instance.PopUpMessage(GameLocalize.GetText(popTextRef));
 
             Release();
         }

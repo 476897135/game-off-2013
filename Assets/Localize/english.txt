@@ -57,8 +57,24 @@
 	{
 		"key":"sarkee_name",
 		"text":"SARKEE"
-	}
+	},
 	
+	{
+		"key":"pickup_healthup",
+		"text":"You found a health upgrade! +2 for life!"
+	},
+	{
+		"key":"pickup_etank",
+		"text":"You found an energy sub-tank! Use it in the PAUSE menu to replenish health."
+	},
+	{
+		"key":"pickup_wtank",
+		"text":"You found a weapon sub-tank! Use it in the PAUSE menu to recharge your weapons."
+	},
+	{
+		"key":"pickup_armor",
+		"text":"You found an armor! You now take only half the damage."
+	},	
 	
 	{
 		"key":"stargazer",
@@ -118,4 +134,9 @@
 		"key":"whip_desc",
 		"text":"Punish your foes with a deadly whip.  Certain enemies are stunned when struck.  Also used for grabbing items out of reach."
 	},
+	
+	{
+		"key":"credits",
+		"text":"~RENEGADEWARE~\nDave Dionisio\n\n~NEWGROUNDS MUSIC~\n\nMain - (8-bit wonderland) by duttonsayshi\n\nStage Select by (Where's The Map) by Neon-Bard\n\nStage Selected - (Megaman 3 stage selected remix) by phoenixdk\n\nVictory - (Spirit) by duttonsayshi\n\nGame Over - (Melancholic Piano Score) by 5vedjeland\n\nBoss Battle by intero\n\nStage: Chea Guerrera - (Catface) by waterflame\n\nStage: Thunder - (Beautiful Chaos) by duttonsayshi\n\nStage: Tankie Girl - (Action-packed-happy-time-warzone) by ANTI-SPAMGUN\n\nStage: Totally Clair - (Lost My Mind) by lilkiller212\n\n"
+	}
 ]
