@@ -15,6 +15,11 @@
 	},
 	
 	{
+		"key":"exit_to_main_title",
+		"text":"RETURN TO MAIN MENU"
+	},
+	
+	{
 		"key":"exit_confirm_title",
 		"text":"EXIT STAGE"
 	},
@@ -31,23 +36,23 @@
 	},
 	{
 		"key":"lightninggirl_name",
-		"text":"TOTALLY LIGHTNING"
+		"text":"THUNDER"
 	},
 	{
 		"key":"tankgirl_name",
-		"text":"TANK GIRL"
+		"text":"TANKIE GIRL"
 	},
 	{
 		"key":"clonegirl_name",
-		"text":"CLONE ME"
+		"text":"JANE CLONEY"
 	},
 	{
 		"key":"hipgirl_name",
-		"text":"HIPSTER BITCH"
+		"text":"HIPSTER"
 	},
 	{
 		"key":"valleygirl_name",
-		"text":"VALLEY GIRL"
+		"text":"TOTALLY CLAIR"
 	},
 	{
 		"key":"sarkee_name",
@@ -111,6 +116,6 @@
 	},
 	{
 		"key":"whip_desc",
-		"text":"Punish your foes with a deadly strike whip attack.  This can cause some enemies to be stunned.  You can also grab items with this whip, nifty!"
+		"text":"Punish your foes with a deadly whip.  Certain enemies are stunned when struck.  Also used for grabbing items out of reach."
 	},
 ]

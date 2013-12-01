@@ -6,6 +6,8 @@ public class UILevelSelectItem : MonoBehaviour {
 
     public string gitGirlPortraitRef = "gitGirl_";
 
+    public tk2dSpriteAnimation animRef;
+
     public UISprite portrait;
     public GameObject inactive;
 
@@ -34,7 +36,7 @@ public class UILevelSelectItem : MonoBehaviour {
         inactive.SetActive(true);
     }
 
-    public void Click() {
+    public void Click(tk2dSpriteAnimator animSpr, AnimatorData toPlay, string take) {
         if(mIsFinalLevel) {
             //if unlocked, load level
         }
@@ -44,8 +46,11 @@ public class UILevelSelectItem : MonoBehaviour {
             }
             else {
                 //start intro
-
-                Main.instance.sceneManager.LoadScene(level);
+                UIModalManager.instance.ModalCloseAll();
+                animSpr.Library = animRef;
+                LevelSelectCharacterControl.instance.toScene = level;
+                LevelSelectCharacterControl.instance.SetAnimWatch(toPlay);
+                toPlay.Play(take);
             }
         }
     }
