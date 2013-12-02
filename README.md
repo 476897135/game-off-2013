@@ -52,3 +52,5 @@ Note: All music are lincensed under Creative Commons, Non-commercial.
 ##Useless Facts
 * Why are all the bosses females? The original story involved GitGirl being a nusance to the intergalactic girl scouts and she is banished in the outer realm of space.  After a while, I decided there's too much spite in the story. The funny thing is that I actually quite like how the story is now,  something that just manifested near the deadline.
 * This game was originally going to be just you shooting a bouncing star and collecting pointless things.  Now it's about reclaiming long lost abilities from malevolent viruses and saving the internets from a certain doom.  So slightly less pointless.
+* The stages supposedly describes the personna of each boss.  I tried...
+* The weakness of each boss is based on what their personality can't stand.  So totally-serious types really hate happy-go-lucky types, diligent ones hate chill-outs, etc.  I thought it'd make a much more interesting thing than just using elements. (hint! hint!)
