@@ -3,13 +3,18 @@
 Megaman inspired game. Me no speaky english when this tired. Will be back soon with description!
 
 ###Notes
-* Sounds - Still missing! I love this game so much that I don't want your ears to bleed with sfxr sounds, which is the only available sound resource that I can easily work with.
+* Sounds - Still missing! I felt like it was all or nothing on this one...I didn't want it to sound cheap or incomplete.
+
+###Updates
+* Fixed secondary key binding for jump.  Sorry!
+* Prev/Next weapon is suppose to be S and D, not A and S.
 
 ###Controls
 * Arrow Keys - Move
 * Z or W - Jump
 * X - Fire
 * Esc or C - Pause
+* S and D - weapon change prev/next.
 
 ##Screenshots
 ![screenshot](https://github.com/ddionisio/game-off-2013/blob/master/Promo/screenshot_0.png?raw=true)
