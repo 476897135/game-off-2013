@@ -1,8 +1,10 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Player.cs">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Weapons\Weapon.cs">
     <Files>
-      <File FileName="Assets\Scripts\Player.cs" Line="34" Column="64" />
+      <File FileName="Assets\Scripts\Player.cs" Line="38" Column="14" />
+      <File FileName="Assets\M8\Shaders\2D\MultVertexColor.shader" Line="55" Column="21" />
+      <File FileName="Assets\Scripts\Weapons\Weapon.cs" Line="102" Column="31" />
     </Files>
     <Pads>
       <Pad Id="ClassPad">
