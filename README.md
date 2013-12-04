@@ -1,6 +1,16 @@
 ##MEGA GIRL.git Battle Rainbow
 
-Megaman inspired game. Me no speaky english when this tired. Will be back soon with description!
+Megaman inspired game.
+
+Is your computer plagued with viruses and trojans?  Need to terminate apps that just won't quit?  Disk fragmentation bogging you down?
+
+If the answer to all that is yes, then employ the power of Mega Girl! The hyper-deluxed-super-mega software that beats back those malicious apps! Download this software today and rest easy at night knowing that Mega Girl's got your back, obliterating those nasty bits into smithereens!
+
+###Command Arguments
+* [-admin] - allows administrative rights
+* [-destroy[[:]attribute]] - specifies specific threat to your computer, possible attribute: viruses, trojans, lockups
+* [-with[[:]]attribute]] - specifies level of brutality in dealing with malicious software.
+* [-time[[:]]attribute]] - specifies urgency of the situation, possible attribute: ASAP, Take-it-easy, Chill
 
 ###Notes
 * Sounds - Still missing! I felt like it was all or nothing on this one...I didn't want it to sound cheap or incomplete.
