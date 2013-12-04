@@ -58,7 +58,7 @@ Note: All music are lincensed under Creative Commons, Non-commercial.
 * Stage: Thunder - (Beautiful Chaos) by duttonsayshi
 * Stage: Tankie Girl - (Action-packed-happy-time-warzone) by ANTI-SPAMGUN
 * Stage: Totally Clair - (Lost My Mind) by lilkiller212
-* 
+
 ##Fonts
 * Ubuntu Mono http://font.ubuntu.com
 * Aero by Nirmal Biswas http://www.be.net/nirmalbiswas
